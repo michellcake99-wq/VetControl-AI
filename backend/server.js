@@ -5,6 +5,7 @@ const protectedRoutes = require('./routes/protected');
 const propietariosRoutes = require('./routes/propietarios');
 const mascotasRoutes = require('./routes/mascotas');
 const manejoErrores = require('./middleware/manejoErrores');
+const { historias, consultas, tratamientos } = require('./routes/historias');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -22,6 +23,11 @@ app.use('/api', protectedRoutes);
 app.use('/api/propietarios', propietariosRoutes);
 app.use('/api/mascotas', mascotasRoutes);
 
+
+// Hu8: historias clínicas
+app.use('/api/historias', historias);
+app.use('/api/consultas', consultas);
+app.use('/api/tratamientos', tratamientos);
 
 // Ruta de prueba
 app.get('/', (req, res) => {
