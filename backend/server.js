@@ -6,6 +6,7 @@ const propietariosRoutes = require('./routes/propietarios');
 const mascotasRoutes = require('./routes/mascotas');
 const manejoErrores = require('./middleware/manejoErrores');
 const { historias, consultas, tratamientos } = require('./routes/historias');
+const citasRoutes = require('./routes/citas');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -28,6 +29,9 @@ app.use('/api/mascotas', mascotasRoutes);
 app.use('/api/historias', historias);
 app.use('/api/consultas', consultas);
 app.use('/api/tratamientos', tratamientos);
+
+// Hu10: citas veterinarias
+app.use('/api/citas', citasRoutes);
 
 // Ruta de prueba
 app.get('/', (req, res) => {
