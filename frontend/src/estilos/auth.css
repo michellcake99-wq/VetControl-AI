@@ -1,0 +1,353 @@
+/* Pantallas de registro e inicio de sesión (Ep3-Hu15).
+   Usa los tokens definidos en index.css (paleta del prototipo de Figma). */
+
+.auth {
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: minmax(340px, 5fr) 6fr;
+  background: var(--c-fondo);
+}
+
+/* ---------- Panel de marca ---------- */
+.auth__panel {
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 40px;
+  padding: 40px 48px;
+  background: var(--c-primario);
+  color: var(--c-blanco);
+}
+.auth__mensaje {
+  position: relative;
+  z-index: 1;
+  max-width: 440px;
+}
+.auth__lema {
+  font-size: 30px;
+  font-weight: 700;
+  line-height: 1.25;
+}
+.auth__puntos {
+  margin-top: 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  font-size: 14px;
+  color: var(--c-banner-sub);
+}
+.auth__puntos li {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.auth__puntos .icono-circulo {
+  background: var(--c-primario-activo);
+  color: var(--c-blanco);
+}
+.auth__circulo {
+  position: absolute;
+  border-radius: 50%;
+  pointer-events: none;
+}
+.auth__circulo--grande {
+  right: -90px;
+  bottom: -90px;
+  width: 300px;
+  height: 300px;
+  background: var(--c-primario-activo);
+}
+.auth__circulo--chico {
+  right: 120px;
+  bottom: 70px;
+  width: 110px;
+  height: 110px;
+  background: #2a8193;
+}
+
+/* ---------- Tarjeta del formulario ---------- */
+.auth__contenido {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  padding: 40px 32px;
+}
+.auth__tarjeta {
+  width: 100%;
+  max-width: 460px;
+  padding: 36px 36px 32px;
+}
+.auth__titulo {
+  font-size: 28px;
+  font-weight: 700;
+  line-height: 1.2;
+  margin-bottom: 6px;
+}
+.auth__formulario {
+  margin-top: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+.auth__fila {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+.auth__olvido {
+  align-self: flex-end;
+  margin-top: -6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--c-primario-activo);
+}
+.auth__olvido:hover,
+.auth__pie a:hover {
+  text-decoration: underline;
+}
+.auth__enviar {
+  width: 100%;
+  gap: 8px;
+  margin-top: 4px;
+  border: 0;
+  cursor: pointer;
+}
+.auth__enviar:disabled {
+  opacity: 0.7;
+  cursor: progress;
+}
+.auth__pie {
+  font-size: 13px;
+  color: var(--c-texto-sec);
+}
+.auth__pie a {
+  font-weight: 600;
+  color: var(--c-primario);
+}
+
+/* ---------- Campos ---------- */
+.campo {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+.campo__etiqueta {
+  font-size: 13px;
+  font-weight: 600;
+  padding: 0;
+}
+.campo__control {
+  position: relative;
+}
+.campo__entrada {
+  width: 100%;
+  height: 44px;
+  padding: 0 14px;
+  font: inherit;
+  font-size: 14px;
+  color: var(--c-primario);
+  background: var(--c-blanco);
+  border: 1px solid #c4dde3;
+  border-radius: var(--r-control);
+  transition: border-color 0.15s;
+}
+.campo__entrada::placeholder {
+  color: #7d9ca6;
+}
+.campo__entrada:hover {
+  border-color: var(--c-divisor);
+}
+.campo__entrada:focus-visible {
+  outline: 3px solid rgba(0, 168, 198, 0.35);
+  outline-offset: 0;
+  border-color: var(--c-chevron);
+  border-radius: var(--r-control);
+}
+.campo__entrada--error {
+  border-color: #b3261e;
+}
+.campo__ojo {
+  position: absolute;
+  top: 0;
+  right: 4px;
+  width: 40px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  background: none;
+  border: 0;
+  color: var(--c-texto-sec);
+  cursor: pointer;
+}
+.campo__ojo:hover {
+  color: var(--c-primario);
+}
+.campo__ayuda {
+  font-size: 12px;
+  color: var(--c-texto-sec);
+}
+.campo__error {
+  font-size: 12px;
+  font-weight: 500;
+  color: #b3261e;
+}
+
+/* ---------- Selector de rol ---------- */
+.roles {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  min-width: 0;
+}
+.roles__opciones {
+  margin-top: 6px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+.rol {
+  position: relative;
+  cursor: pointer;
+}
+.rol input {
+  position: absolute;
+  opacity: 0;
+  inset: 0;
+  margin: 0;
+  cursor: pointer;
+}
+.rol__tarjeta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 60px;
+  padding: 10px 12px;
+  border: 1px solid #c4dde3;
+  border-radius: var(--r-control);
+  background: var(--c-blanco);
+  transition:
+    border-color 0.15s,
+    background-color 0.15s;
+}
+.rol:hover .rol__tarjeta {
+  border-color: var(--c-divisor);
+}
+.rol input:checked + .rol__tarjeta {
+  border-color: var(--c-primario);
+  background: var(--c-panel);
+  box-shadow: inset 0 0 0 1px var(--c-primario);
+}
+.rol input:focus-visible + .rol__tarjeta {
+  outline: 3px solid var(--c-chevron);
+  outline-offset: 2px;
+}
+.rol__titulo {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+}
+.rol__detalle {
+  display: block;
+  margin-top: 2px;
+  font-size: 12px;
+  color: var(--c-texto-sec);
+}
+
+/* ---------- Avisos ---------- */
+.aviso {
+  margin-top: 20px;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: var(--r-control);
+  font-size: 13px;
+  line-height: 1.4;
+}
+.aviso svg {
+  flex: none;
+  margin-top: 1px;
+}
+.aviso--error {
+  background: #fdecea;
+  color: #8c1d18;
+  border: 1px solid #f3c2be;
+}
+.aviso--exito {
+  background: var(--c-panel);
+  color: var(--c-primario);
+  border: 1px solid #b5dbe3;
+}
+.aviso--info {
+  background: var(--c-panel);
+  color: var(--c-texto-sec);
+  border: 1px solid var(--c-borde);
+}
+
+.girar {
+  animation: girar 0.9s linear infinite;
+}
+@keyframes girar {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ---------- Cerrar sesión (barra lateral) ---------- */
+.sidebar__salir {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0;
+  background: none;
+  border: 0;
+  color: var(--c-sobre-oscuro);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.sidebar__salir:hover {
+  color: var(--c-blanco);
+}
+
+/* ---------- Responsivo ---------- */
+@media (max-width: 900px) {
+  .auth {
+    grid-template-columns: 1fr;
+  }
+  .auth__panel {
+    padding: 24px 24px 28px;
+    gap: 20px;
+  }
+  .auth__lema {
+    font-size: 22px;
+  }
+  .auth__puntos,
+  .auth__circulo--chico {
+    display: none;
+  }
+  .auth__circulo--grande {
+    width: 180px;
+    height: 180px;
+    right: -60px;
+    bottom: -80px;
+  }
+  .auth__contenido {
+    padding: 24px 16px 40px;
+  }
+  .auth__tarjeta {
+    padding: 28px 22px 26px;
+  }
+}
+
+@media (max-width: 480px) {
+  .auth__fila,
+  .roles__opciones {
+    grid-template-columns: 1fr;
+  }
+}
