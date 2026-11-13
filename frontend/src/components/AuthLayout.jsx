@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import { Calendar, PawPrint, Sparkles } from 'lucide-react';
+import logo from '../assets/logo-vetcontrol.png';
 import '../estilos/auth.css';
 
 const puntos = [
@@ -16,14 +17,12 @@ export default function AuthLayout({ titulo, subtitulo, children, pie }) {
   return (
     <div className="auth">
       <aside className="auth__panel">
-        <Link to="/" className="marca">
-          <span className="marca__emblema" aria-hidden="true">
-            <Sparkles size={20} strokeWidth={2.2} />
-          </span>
-          <span className="marca__texto">
-            <span className="marca__nombre">VetControl</span>
-            <span className="marca__sub">AI · Cuidado inteligente</span>
-          </span>
+        <Link
+          to="/"
+          className="auth__logo"
+          aria-label="VetControl AI, ir al inicio"
+        >
+          <img src={logo} alt="VetControl AI" width="520" height="425" />
         </Link>
 
         <div className="auth__mensaje">

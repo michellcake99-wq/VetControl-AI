@@ -20,6 +20,20 @@
   background: var(--c-primario);
   color: var(--c-blanco);
 }
+.auth__logo {
+  position: relative;
+  z-index: 1;
+  align-self: flex-start;
+  display: inline-flex;
+  padding: 12px 20px;
+  border-radius: var(--r-card);
+  background: #f7f7f7; /* mismo fondo que la imagen del logo */
+}
+.auth__logo img {
+  display: block;
+  width: 190px;
+  height: auto;
+}
 .auth__mensaje {
   position: relative;
   z-index: 1;
@@ -326,6 +340,12 @@
   }
   .auth__lema {
     font-size: 22px;
+  }
+  .auth__logo {
+    padding: 8px 14px;
+  }
+  .auth__logo img {
+    width: 140px;
   }
   .auth__puntos,
   .auth__circulo--chico {
