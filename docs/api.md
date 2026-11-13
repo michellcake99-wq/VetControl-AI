@@ -94,6 +94,59 @@ POST /api/tratamientos/1/evoluciones      (como propietario)
 { "estado_general": 4, "dosis_aplicada": true, "descripcion": "Ya no cojea" }
 ```
 
+## Citas (Ep3-Hu10)
+
+Todas las rutas exigen el token JWT. Las fechas se envían en formato ISO 8601 con zona horaria (por ejemplo `2026-11-20T10:30:00-05:00`).
+
+| Método | Ruta | Quién |
+|---|---|---|
+| POST | `/citas` | propietario (solo para sus mascotas), veterinario (solo en su agenda) o administrador |
+| GET | `/citas?estado=&desde=&hasta=&id_mascota=&id_veterinario=&orden=asc|desc&pagina=&limite=` | todos — el propietario ve las suyas, el veterinario su agenda y el administrador todas |
+| GET | `/citas/:id` | el propietario de la mascota, el veterinario de la cita o el administrador |
+| PUT o PATCH | `/citas/:id/estado` | según el cambio (ver tabla de estados) |
+
+```json
+POST /api/citas
+{ "id_mascota": 1, "id_veterinario": 1, "fecha_hora": "2026-11-20T10:30:00-05:00",
+  "duracion_min": 30, "motivo": "Vacuna anual" }
+
+PUT /api/citas/5/estado
+{ "estado": "atendida", "observaciones": "Sin novedades" }
+```
+
+`duracion_min` es opcional (por defecto 30; entre 10 y 240). La cita nace con estado `programada` (la «solicitada» de los criterios de la historia).
+
+Reglas de la creación:
+
+- No se permiten fechas u horas pasadas (`400`).
+- Un veterinario no puede tener dos citas activas (`programada` o `reprogramada`) que se crucen en el tiempo: responde `409` con el mensaje «El veterinario ya tiene una cita en ese horario (ocupado de 10:00 a 10:30). Elija otra hora.». Una cita cancelada libera el horario.
+- El propietario que agenda para la mascota de otra persona recibe `403`; mascota inexistente `404`; veterinario inexistente o desactivado `400`.
+
+Estados (los del tipo `estado_cita` de la base de datos: `programada`, `reprogramada`, `cancelada`, `atendida`, `no_asistio`). Equivalencias con los criterios: «solicitada» = `programada` y «completada» = `atendida`. No existe un estado «confirmada».
+
+Cambios de estado permitidos (cualquier otro responde `409`; si el estado es válido pero el rol no puede hacerlo, `403`):
+
+| Estado actual | Nuevo estado | Quién |
+|---|---|---|
+| `programada` o `reprogramada` | `atendida` | veterinario de la cita o administrador |
+| `programada` o `reprogramada` | `no_asistio` | veterinario de la cita o administrador |
+| `programada` o `reprogramada` | `cancelada` | propietario de la mascota, veterinario de la cita o administrador |
+
+`atendida`, `cancelada` y `no_asistio` son estados finales. Al registrar una consulta asociada a una cita (`POST /historias/:id/consultas` con `id_cita`), la cita pasa automáticamente a `atendida`.
+
+## Consultas y tratamientos por mascota (Ep3-Hu9)
+
+Además de las rutas por historia clínica de arriba:
+
+| Método | Ruta | Quién |
+|---|---|---|
+| GET | `/mascotas/:id/consultas?desde=&hasta=&pagina=&limite=` | todos (el propietario solo las de sus mascotas) |
+| GET | `/mascotas/:id/tratamientos?estado=activo|finalizado|suspendido` | todos (el propietario solo las de sus mascotas) |
+
+Las consultas se listan de la más reciente a la más antigua e incluyen `nombre_veterinario` y `total_tratamientos`; los tratamientos incluyen `fecha_consulta` y `diagnostico`. Solo el veterinario crea o modifica consultas y tratamientos; el propietario únicamente consulta los de sus mascotas.
+
+La colección de Postman para probar estas rutas está en `docs/VetControl-AI.postman_collection.json`.
+
 ## Errores
 
 Todas las respuestas de error usan `{"mensaje": "..."}`, igual que el login existente.
