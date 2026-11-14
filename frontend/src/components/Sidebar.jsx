@@ -3,6 +3,7 @@ import { Sparkles, X } from 'lucide-react';
 import { navItems } from '../routes.js';
 import { usuario } from '../data/mockData.js';
 import { iniciales } from '../utils/format.js';
+import BotonCerrarSesion from './BotonCerrarSesion.jsx';
 
 export default function Sidebar({ abierto, onCerrar }) {
   return (
@@ -70,6 +71,7 @@ export default function Sidebar({ abierto, onCerrar }) {
             <span className="sidebar__sub">{usuario.rol}</span>
           </span>
         </Link>
+        <BotonCerrarSesion />
       </div>
     </aside>
   );
