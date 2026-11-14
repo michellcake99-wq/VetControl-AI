@@ -338,19 +338,28 @@ button {
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  gap: 8px;
   height: 44px;
   padding: 0 24px;
+  border: 0;
   border-radius: var(--r-control);
   font-size: 13px;
   font-weight: 600;
+  cursor: pointer;
   transition: filter 0.15s;
 }
 .boton:hover {
   filter: brightness(1.08);
 }
+.boton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  filter: none;
+}
 .boton--claro {
   background: var(--c-blanco);
   color: var(--c-primario);
+  border: 1px solid var(--c-borde);
 }
 .boton--claro:hover {
   background: var(--c-panel);
@@ -359,6 +368,31 @@ button {
 .boton--oscuro {
   background: var(--c-primario);
   color: var(--c-blanco);
+}
+.boton--peligro {
+  background: #d94f4f;
+  color: var(--c-blanco);
+}
+.boton--peq {
+  height: 36px;
+  padding: 0 14px;
+  font-size: 12px;
+}
+.boton--icono {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--c-texto-sec);
+  cursor: pointer;
+}
+.boton--icono:hover {
+  background: var(--c-panel);
+  color: #d94f4f;
 }
 
 /* ---------- Tarjetas ---------- */
@@ -533,6 +567,268 @@ a.cita:hover {
   display: none;
 }
 
+/* ---------- Páginas de listado (mascotas, propietarios, veterinarios) ---------- */
+.encabezado-pagina {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-bottom: 4px;
+}
+.campo-busqueda {
+  display: block;
+  width: 100%;
+  max-width: 360px;
+  height: 44px;
+  margin: 18px 0 20px;
+  padding: 0 16px;
+  border: 1px solid var(--c-borde);
+  border-radius: var(--r-control);
+  font-size: 14px;
+  background: var(--c-blanco);
+  color: var(--c-primario);
+}
+
+.rejilla-tarjetas {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 18px;
+}
+.tarjeta-mascota {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.tarjeta-mascota__cabecera {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.tarjeta-mascota__nombre {
+  font-size: 15px;
+  font-weight: 700;
+}
+.tarjeta-mascota__detalle {
+  font-size: 13px;
+  color: var(--c-texto-sec);
+}
+.tarjeta-mascota__acciones {
+  display: flex;
+  gap: 8px;
+  margin-top: auto;
+  padding-top: 6px;
+}
+
+.lista-filas {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 18px;
+}
+.fila-entidad {
+  padding: 16px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.fila-entidad__titulo {
+  font-size: 15px;
+  font-weight: 700;
+}
+.fila-entidad__acciones {
+  display: flex;
+  gap: 8px;
+}
+.etiqueta {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--c-primario);
+  background: var(--c-panel);
+  border: 0;
+  border-radius: 999px;
+  padding: 6px 14px;
+  cursor: pointer;
+}
+.etiqueta--activa {
+  background: var(--c-nav);
+}
+.fila-propietario__mascotas {
+  padding: 14px 20px 16px;
+  border-top: 1px solid var(--c-borde);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.chip-mascota {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--c-primario);
+  background: var(--c-icono-bg);
+  border-radius: 999px;
+  padding: 6px 12px;
+}
+
+/* ---------- Alertas ---------- */
+.alerta {
+  padding: 14px 18px;
+  border-radius: var(--r-control);
+  font-size: 13px;
+  margin: 16px 0;
+}
+.alerta--error {
+  background: #fdecec;
+  color: #b42318;
+  border: 1px solid #f3c6c6;
+}
+.alerta--exito {
+  background: #e6f7ef;
+  color: #0f7a4e;
+  border: 1px solid #bfe9d3;
+}
+
+/* ---------- Cargando ---------- */
+.cargando {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 28px 0;
+  color: var(--c-texto-sec);
+  font-size: 13px;
+}
+.cargando__icono {
+  animation: girar 0.8s linear infinite;
+}
+@keyframes girar {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ---------- Formularios ---------- */
+.formulario {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  max-width: 640px;
+  padding: 26px;
+  margin-top: 18px;
+}
+.campo {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.campo label {
+  font-size: 13px;
+  font-weight: 600;
+}
+.campo input,
+.campo select,
+.campo textarea {
+  height: 44px;
+  padding: 0 14px;
+  border: 1px solid var(--c-borde);
+  border-radius: var(--r-control);
+  font-size: 14px;
+  font-family: inherit;
+  background: var(--c-blanco);
+  color: var(--c-primario);
+}
+.campo textarea {
+  height: auto;
+  padding: 10px 14px;
+  resize: vertical;
+}
+.campo--checkbox {
+  flex-direction: row;
+  align-items: center;
+  gap: 10px;
+}
+.campo--checkbox input {
+  height: auto;
+  width: 18px;
+}
+.campo--error input,
+.campo--error select {
+  border-color: #d94f4f;
+}
+.campo__error {
+  font-size: 12px;
+  color: #d94f4f;
+}
+.formulario__acciones {
+  display: flex;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+/* ---------- Horarios de veterinario ---------- */
+.lista-horarios {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 14px 0;
+}
+.lista-horarios__item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  background: var(--c-panel);
+  border-radius: var(--r-control);
+  font-size: 13px;
+}
+.formulario-horario {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+}
+.formulario-horario select,
+.formulario-horario input {
+  height: 40px;
+  padding: 0 12px;
+  border: 1px solid var(--c-borde);
+  border-radius: var(--r-control);
+  font-size: 13px;
+}
+
+/* ---------- Modal de confirmación ---------- */
+.modal__fondo {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  background: rgba(12, 74, 94, 0.45);
+  display: grid;
+  place-items: center;
+  padding: 20px;
+}
+.modal {
+  background: var(--c-blanco);
+  border-radius: var(--r-card);
+  padding: 26px;
+  max-width: 420px;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.modal__titulo {
+  font-size: 18px;
+  font-weight: 700;
+}
+
 /* ---------- Responsivo ---------- */
 @media (max-width: 1180px) {
   .inferior {
@@ -606,6 +902,13 @@ a.cita:hover {
   .cita__avatar {
     width: 52px;
     height: 52px;
+  }
+  /* Ep3-Hu11: las tarjetas de mascotas se apilan en una sola columna en móvil */
+  .rejilla-tarjetas {
+    grid-template-columns: 1fr;
+  }
+  .formulario {
+    padding: 18px;
   }
 }
 
