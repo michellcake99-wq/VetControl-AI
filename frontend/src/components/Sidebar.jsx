@@ -4,8 +4,24 @@ import { navItems } from '../routes.js';
 import { usuario } from '../data/mockData.js';
 import { iniciales } from '../utils/format.js';
 import BotonCerrarSesion from './BotonCerrarSesion.jsx';
+import { obtenerSesion } from '../utils/sesion.js';
+
+const ETIQUETAS_ROL = {
+  propietario: 'Propietario/a',
+  veterinario: 'Veterinario/a',
+  administrador: 'Administrador/a',
+};
 
 export default function Sidebar({ abierto, onCerrar }) {
+  // Ep7-Hu1: el menú se arma con el rol del usuario que inició sesión (Ep3-Hu15).
+  // Los datos de ejemplo de mockData.js solo se usan si por algún motivo no hay sesión.
+  const cuenta = obtenerSesion()?.usuario ?? usuario;
+  const rol = cuenta.rol;
+  const etiquetaRol = ETIQUETAS_ROL[rol] ?? rol;
+  const itemsVisibles = navItems.filter(
+    (item) => !item.roles || item.roles.includes(rol)
+  );
+
   return (
     <aside
       id="menu-principal"
@@ -36,7 +52,7 @@ export default function Sidebar({ abierto, onCerrar }) {
 
       <nav className="nav">
         <ul>
-          {navItems.map(({ to, label, icon: Icon }) => (
+          {itemsVisibles.map(({ to, label, icon: Icon }) => (
             <li key={to}>
               <NavLink
                 to={to}
@@ -64,11 +80,11 @@ export default function Sidebar({ abierto, onCerrar }) {
         </Link>
         <Link to="/perfil" className="sidebar__bloque">
           <span className="circulo circulo--cuenta" aria-hidden="true">
-            {iniciales(usuario.nombre, usuario.apellido)}
+            {iniciales(cuenta.nombre, cuenta.apellido)}
           </span>
           <span>
             <span className="sidebar__titulo">Mi cuenta</span>
-            <span className="sidebar__sub">{usuario.rol}</span>
+            <span className="sidebar__sub">{etiquetaRol}</span>
           </span>
         </Link>
         <BotonCerrarSesion />

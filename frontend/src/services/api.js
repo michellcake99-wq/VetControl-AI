@@ -1,3 +1,5 @@
+import { cerrarSesion, obtenerSesion } from '../utils/sesion.js';
+
 // Cliente mínimo de la API de VetControl AI.
 // En desarrollo, Vite reenvía /api al backend (ver vite.config.js); en producción debe
 // publicarse en el mismo dominio o definir VITE_API_URL.
@@ -46,3 +48,25 @@ export const iniciarSesion = (correo, contrasena) =>
 // POST /api/auth/register -> { mensaje, usuario }
 export const registrarUsuario = (datos) =>
   peticion('/auth/register', { metodo: 'POST', cuerpo: datos });
+
+// Cliente para las pantallas internas (Ep3-Hu11, Ep4-Hu5…): envía el token de la sesión.
+// Si el backend responde 401 (token vencido o cuenta desactivada), cierra la sesión
+// y lleva al inicio de sesión.
+async function peticionConSesion(ruta, opciones = {}) {
+  try {
+    return await peticion(ruta, { ...opciones, token: obtenerSesion()?.token });
+  } catch (error) {
+    if (error.estado === 401) {
+      cerrarSesion();
+      window.location.assign('/iniciar-sesion');
+    }
+    throw error;
+  }
+}
+
+export const api = {
+  get: (ruta) => peticionConSesion(ruta),
+  post: (ruta, cuerpo) => peticionConSesion(ruta, { metodo: 'POST', cuerpo }),
+  put: (ruta, cuerpo) => peticionConSesion(ruta, { metodo: 'PUT', cuerpo }),
+  delete: (ruta) => peticionConSesion(ruta, { metodo: 'DELETE' }),
+};
