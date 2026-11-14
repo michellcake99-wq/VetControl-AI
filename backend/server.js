@@ -1,5 +1,7 @@
 require('dotenv').config({ quiet: true });
+const http = require('http');
 const express = require('express');
+const { Server } = require('socket.io');
 const authRoutes = require('./routes/auth');
 const protectedRoutes = require('./routes/protected');
 const propietariosRoutes = require('./routes/propietarios');
@@ -7,6 +9,8 @@ const mascotasRoutes = require('./routes/mascotas');
 const manejoErrores = require('./middleware/manejoErrores');
 const { historias, consultas, tratamientos } = require('./routes/historias');
 const citasRoutes = require('./routes/citas');
+const conversacionesRoutes = require('./routes/conversaciones');
+const { iniciarChat } = require('./sockets/chat');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -33,6 +37,9 @@ app.use('/api/tratamientos', tratamientos);
 // Hu10: citas veterinarias
 app.use('/api/citas', citasRoutes);
 
+// Ep8: chat propietario <-> veterinario (el tiempo real va por Socket.IO)
+app.use('/api/conversaciones', conversacionesRoutes);
+
 // Ruta de prueba
 app.get('/', (req, res) => {
     res.json({
@@ -46,7 +53,10 @@ app.use(manejoErrores);
 
 // Iniciar servidor (no se inicia cuando lo importan las pruebas)
 if (require.main === module) {
-    app.listen(PORT, () => {
+    // Express y Socket.IO comparten el mismo servidor HTTP
+    const servidor = http.createServer(app);
+    iniciarChat(new Server(servidor));
+    servidor.listen(PORT, () => {
         console.log(`Servidor ejecutándose en http://localhost:${PORT}`);
     });
 }

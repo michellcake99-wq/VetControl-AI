@@ -7,6 +7,7 @@ import IniciarSesion from './pages/IniciarSesion.jsx';
 import Registro from './pages/Registro.jsx';
 import RecuperarContrasena from './pages/RecuperarContrasena.jsx';
 import RutaProtegida from './components/RutaProtegida.jsx';
+import Chat from './pages/Chat.jsx';
 
 export default function App() {
   return (
@@ -38,6 +39,7 @@ export default function App() {
           element={<EnConstruccion titulo="Agendar una cita" />}
         />
         <Route path="/vacunas" element={<EnConstruccion titulo="Vacunas" />} />
+        <Route path="/chat" element={<Chat />} />
         <Route
           path="/asistente"
           element={<EnConstruccion titulo="Asistente IA" />}
