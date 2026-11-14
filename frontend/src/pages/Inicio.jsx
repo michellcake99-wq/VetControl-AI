@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
   PawPrint,
@@ -7,8 +8,10 @@ import {
   ChevronRight,
   Dog,
 } from 'lucide-react';
-import { usuario, resumen, proximaCita } from '../data/mockData.js';
+import { usuario } from '../data/mockData.js';
 import { fechaLarga, fechaCita } from '../utils/format.js';
+import { obtenerSesion } from '../utils/sesion.js';
+import { cargarResumenInicio } from '../utils/resumenInicio.js';
 
 const accesos = [
   { to: '/mascotas/nueva', label: 'Registrar mascota', icon: PawPrint },
@@ -17,30 +20,65 @@ const accesos = [
 ];
 
 export default function Inicio() {
+  // Nombre del usuario que inició sesión (si no hay sesión, se usan los datos de ejemplo)
+  const cuenta = obtenerSesion()?.usuario ?? usuario;
+
+  // Resumen real desde la API: mascotas, citas próximas y vacunas del usuario
+  const [resumen, setResumen] = useState(null);
+  const [errorResumen, setErrorResumen] = useState('');
+
+  useEffect(() => {
+    let cancelado = false;
+    cargarResumenInicio(cuenta.rol)
+      .then((datos) => {
+        if (!cancelado) setResumen(datos);
+      })
+      .catch(() => {
+        if (!cancelado) {
+          setErrorResumen(
+            'No se pudo cargar tu resumen. Intenta recargar la página.'
+          );
+        }
+      });
+    return () => {
+      cancelado = true;
+    };
+  }, [cuenta.rol]);
+
+  const cargando = !resumen && !errorResumen;
+  const proximaCita = resumen?.proximaCita ?? null;
+  const vacunas = resumen?.vacunasAlDia ?? null;
+  const esPropietario = cuenta.rol === 'propietario';
+
   const metricas = [
     {
-      titulo: 'Mis mascotas',
-      valor: resumen.mascotas,
+      titulo: esPropietario ? 'Mis mascotas' : 'Mascotas',
+      valor: resumen ? resumen.totalMascotas : '—',
       detalle:
-        resumen.mascotas === 1
+        resumen?.totalMascotas === 1
           ? 'compañero registrado'
           : 'compañeros registrados',
       icon: PawPrint,
     },
     {
       titulo: 'Próximas citas',
-      valor: resumen.proximasCitas,
-      detalle:
-        resumen.proximasCitas === 1 ? 'cita por venir' : 'citas por venir',
+      valor: resumen ? resumen.totalCitas : '—',
+      detalle: resumen?.totalCitas === 1 ? 'cita por venir' : 'citas por venir',
       icon: Calendar,
     },
     {
       titulo: 'Vacunas al día',
-      valor: `${resumen.vacunasAlDia}%`,
+      valor: vacunas === null ? '—' : `${vacunas}%`,
       detalle:
-        resumen.vacunasAlDia >= 80
-          ? '¡Vas por buen camino!'
-          : 'Revisa las vacunas pendientes',
+        vacunas !== null
+          ? vacunas >= 80
+            ? '¡Vas por buen camino!'
+            : 'Revisa las vacunas pendientes'
+          : cargando
+            ? 'Calculando…'
+            : resumen?.vacunasCalculadas
+              ? 'Sin vacunas registradas'
+              : 'Consúltalas en la historia de cada mascota',
       icon: ShieldCheck,
     },
   ];
@@ -49,7 +87,7 @@ export default function Inicio() {
     <div className="inicio">
       <header className="saludo">
         <p className="saludo__fecha">{fechaLarga()}</p>
-        <h1 className="saludo__titulo">¡Hola, {usuario.nombre}!</h1>
+        <h1 className="saludo__titulo">¡Hola, {cuenta.nombre}!</h1>
         <p className="texto-sec">
           Todo listo para cuidar mejor de tus compañeros peludos.
         </p>
@@ -102,7 +140,10 @@ export default function Inicio() {
           </h2>
           <p className="texto-sec">No pierdas de vista su próximo control.</p>
 
-          {proximaCita ? (
+          {errorResumen && <p className="texto-sec">{errorResumen}</p>}
+          {cargando ? (
+            <p className="cita cita--vacia">Cargando tu próxima cita…</p>
+          ) : proximaCita ? (
             <>
               <Link to="/citas" className="cita">
                 <span className="cita__avatar" aria-hidden="true">
@@ -110,13 +151,13 @@ export default function Inicio() {
                 </span>
                 <span className="cita__info">
                   <span className="cita__titulo">
-                    {proximaCita.mascota} · {proximaCita.motivo}
+                    {proximaCita.nombre_mascota} · {proximaCita.motivo}
                   </span>
                   <span className="cita__fecha">
-                    {fechaCita(proximaCita.fecha)}
+                    {fechaCita(proximaCita.fecha_hora)}
                   </span>
                   <span className="cita__lugar">
-                    {proximaCita.clinica} · {proximaCita.veterinario}
+                    Con {proximaCita.nombre_veterinario}
                   </span>
                 </span>
                 <ChevronRight

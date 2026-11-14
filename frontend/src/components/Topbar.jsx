@@ -2,8 +2,18 @@ import { Link } from 'react-router-dom';
 import { Bell, Menu } from 'lucide-react';
 import { usuario, tieneNotificaciones } from '../data/mockData.js';
 import { iniciales } from '../utils/format.js';
+import { obtenerSesion } from '../utils/sesion.js';
+
+const PORTAL_POR_ROL = {
+  propietario: 'Portal de propietarios',
+  veterinario: 'Portal veterinario',
+  administrador: 'Panel de administración',
+};
 
 export default function Topbar({ onAbrirMenu, menuAbierto }) {
+  // Datos del usuario que inició sesión (si no hay sesión, se usan los de ejemplo)
+  const cuenta = obtenerSesion()?.usuario ?? usuario;
+  const portal = PORTAL_POR_ROL[cuenta.rol] ?? 'Portal de propietarios';
   return (
     <header className="topbar">
       <button
@@ -17,7 +27,7 @@ export default function Topbar({ onAbrirMenu, menuAbierto }) {
         <Menu size={22} />
       </button>
       <p className="topbar__ruta">
-        Portal de propietarios <span aria-hidden="true">/</span> VetControl AI
+        {portal} <span aria-hidden="true">/</span> VetControl AI
       </p>
       <div className="topbar__acciones">
         <Link
@@ -37,9 +47,9 @@ export default function Topbar({ onAbrirMenu, menuAbierto }) {
         <Link
           to="/perfil"
           className="avatar"
-          aria-label={`Perfil de ${usuario.nombre}`}
+          aria-label={`Perfil de ${cuenta.nombre}`}
         >
-          {iniciales(usuario.nombre, usuario.apellido)}
+          {iniciales(cuenta.nombre, cuenta.apellido)}
         </Link>
       </div>
     </header>
