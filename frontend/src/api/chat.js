@@ -34,7 +34,8 @@ export const chatApi = {
   misMascotas: () => pedir('GET', '/mascotas?limite=100').then((r) => r.datos),
   crearConversacion: (datos) => pedir('POST', '/conversaciones', datos),
   mensajes: (id) => pedir('GET', `/conversaciones/${id}/mensajes`),
+  marcarLeidos: (id) => pedir('PUT', `/conversaciones/${id}/leidos`),
 };
 
-/** Socket del chat: autentica con el mismo token JWT. */
+/** Socket del chat. Socket.IO se reconecta solo si se pierde la conexión. */
 export const conectarChat = (token) => io({ auth: { token } });

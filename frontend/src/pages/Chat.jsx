@@ -8,7 +8,7 @@ import {
 } from '../api/chat.js';
 import './Chat.css';
 
-// Ep8-Hu1: envío de mensajes entre propietario y veterinario
+// Ep8-Hu1 (envío de mensajes) y Ep8-Hu2 (recepción en tiempo real)
 const MAX_CARACTERES = 1000;
 
 const hora = (iso) =>
@@ -45,7 +45,13 @@ function SalaChat({ token, yo }) {
   const [nueva, setNueva] = useState(false);
 
   const socketRef = useRef(null);
+  const activaRef = useRef(null); // el listener del socket necesita la conversación abierta actual
   const finRef = useRef(null);
+  const conversacionesRef = useRef([]);
+
+  useEffect(() => {
+    conversacionesRef.current = conversaciones;
+  }, [conversaciones]);
 
   const cargarConversaciones = useCallback(
     () =>
@@ -57,29 +63,77 @@ function SalaChat({ token, yo }) {
   );
 
   const abrir = useCallback(async (id) => {
+    activaRef.current = id;
     setActiva(id);
     setError('');
     try {
       setMensajes(await chatApi.mensajes(id));
+      await chatApi.marcarLeidos(id);
+      setConversaciones((cs) =>
+        cs.map((c) => (c.id_conversacion === id ? { ...c, no_leidos: 0 } : c))
+      );
     } catch (e) {
       setError(e.message);
     }
   }, []);
 
-  // Conexión con el servidor de chat (valida el token JWT)
+  // Conexión en tiempo real
   useEffect(() => {
     cargarConversaciones();
     const socket = conectarChat(token);
     socketRef.current = socket;
 
-    socket.on('connect', () => setConexion('conectado'));
-    socket.on('disconnect', () => setConexion('conectando'));
+    socket.on('connect', () => {
+      setConexion('conectado');
+      // Al reconectarse se recupera lo que llegó mientras no había conexión
+      cargarConversaciones();
+      if (activaRef.current) {
+        chatApi
+          .mensajes(activaRef.current)
+          .then(setMensajes)
+          .catch(() => {});
+      }
+    });
+    socket.on('disconnect', () => setConexion('reconectando'));
     socket.on('connect_error', (e) => {
-      if (!socket.active) setError(`${e.message}. Vuelve a iniciar sesión.`); // token inválido o vencido
+      if (socket.active) setConexion('reconectando');
+      else setError(`${e.message}. Vuelve a iniciar sesión.`); // token inválido o vencido
+    });
+
+    socket.on('nuevo_mensaje', (m) => {
+      const esMio = m.id_remitente === yo.id_usuario;
+      const abierta = m.id_conversacion === activaRef.current;
+
+      if (abierta) {
+        setMensajes((ms) =>
+          ms.some((x) => x.id_mensaje === m.id_mensaje) ? ms : [...ms, m]
+        );
+        if (!esMio) chatApi.marcarLeidos(m.id_conversacion).catch(() => {});
+      }
+      // Conversación nueva que aún no está en la lista (p. ej. el primer mensaje que recibe el veterinario)
+      if (
+        !conversacionesRef.current.some(
+          (x) => x.id_conversacion === m.id_conversacion
+        )
+      ) {
+        cargarConversaciones();
+        return;
+      }
+      setConversaciones((cs) => {
+        const c = cs.find((x) => x.id_conversacion === m.id_conversacion);
+        if (!c) return cs;
+        const actualizada = {
+          ...c,
+          ultimo_mensaje: m,
+          no_leidos: abierta || esMio ? c.no_leidos : c.no_leidos + 1,
+        };
+        return [actualizada, ...cs.filter((x) => x !== c)];
+      });
     });
 
     return () => socket.disconnect();
-  }, [token, cargarConversaciones]);
+  }, [token, yo.id_usuario, cargarConversaciones]);
+
   // Mantener visible el último mensaje
   useEffect(() => {
     finRef.current?.scrollIntoView({ block: 'end' });
@@ -94,12 +148,6 @@ function SalaChat({ token, yo }) {
         .timeout(5000)
         .emitWithAck('enviar_mensaje', { id_conversacion: activa, contenido });
       if (r.error) return setError(r.error);
-      setMensajes((ms) => [...ms, r.mensaje]);
-      setConversaciones((cs) =>
-        cs.map((c) =>
-          c.id_conversacion === activa ? { ...c, ultimo_mensaje: r.mensaje } : c
-        )
-      );
       setTexto('');
       setError('');
     } catch {
@@ -116,7 +164,7 @@ function SalaChat({ token, yo }) {
         <h1 className="saludo__titulo">Mensajes</h1>
         {conexion !== 'conectado' && (
           <span className="chat__estado" role="status">
-            Conectando…
+            {conexion === 'conectando' ? 'Conectando…' : 'Reconectando…'}
           </span>
         )}
       </header>
@@ -174,6 +222,14 @@ function SalaChat({ token, yo }) {
                       {c.ultimo_mensaje?.contenido ?? 'Sin mensajes'}
                     </span>
                   </span>
+                  {c.no_leidos > 0 && (
+                    <span
+                      className="chat__no-leidos"
+                      aria-label={`${c.no_leidos} sin leer`}
+                    >
+                      {c.no_leidos}
+                    </span>
+                  )}
                 </button>
               </li>
             ))}
@@ -192,7 +248,10 @@ function SalaChat({ token, yo }) {
                 <button
                   type="button"
                   className="chat__volver"
-                  onClick={() => setActiva(null)}
+                  onClick={() => {
+                    activaRef.current = null;
+                    setActiva(null);
+                  }}
                   aria-label="Volver a las conversaciones"
                 >
                   <ArrowLeft size={20} />
