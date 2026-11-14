@@ -114,10 +114,26 @@ const evolucionCrear = z.object({
     descripcion: texto(2000),
 });
 
+// ------------------------------- Chat -------------------------------
+const idPositivo = z.coerce.number().int().positive('Id inválido');
+
+const conversacionCrear = z.object({
+    id_veterinario: idPositivo,
+    id_mascota: idPositivo.nullish(),   // opcional: la conversación puede no tratar de una mascota
+});
+
+const mensajeEnviar = z.object({
+    id_conversacion: idPositivo,
+    contenido: z.string().trim()
+        .min(1, 'El mensaje no puede estar vacío')
+        .max(1000, 'El mensaje no puede tener más de 1000 caracteres'),
+});
+
 module.exports = {
     parametroId,
     propietarioCrear, propietarioActualizar,
     mascotaCrear, mascotaActualizar,
     historiaActualizar, consultaCrear, consultaActualizar,
     tratamientoCrear, tratamientoActualizar, vacunaCrear, evolucionCrear,
+    conversacionCrear, mensajeEnviar,
 };
