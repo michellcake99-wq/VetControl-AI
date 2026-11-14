@@ -6,6 +6,7 @@ const authRoutes = require('./routes/auth');
 const protectedRoutes = require('./routes/protected');
 const propietariosRoutes = require('./routes/propietarios');
 const mascotasRoutes = require('./routes/mascotas');
+const veterinariosRoutes = require('./routes/veterinarios');
 const manejoErrores = require('./middleware/manejoErrores');
 const { historias, consultas, tratamientos } = require('./routes/historias');
 const citasRoutes = require('./routes/citas');
@@ -28,6 +29,8 @@ app.use('/api', protectedRoutes);
 app.use('/api/propietarios', propietariosRoutes);
 app.use('/api/mascotas', mascotasRoutes);
 
+// Ep4-Hu5: veterinarios (solo administrador)
+app.use('/api/veterinarios', veterinariosRoutes);
 
 // Hu8: historias clínicas
 app.use('/api/historias', historias);

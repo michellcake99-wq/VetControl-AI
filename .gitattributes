@@ -1,0 +1,8 @@
+# Todos los archivos de texto se guardan en el repositorio con finales de línea LF,
+# aunque se editen en Windows. Evita que Git marque archivos como modificados sin serlo.
+* text=auto eol=lf
+
+*.png binary
+*.jpg binary
+*.ico binary
+*.woff2 binary

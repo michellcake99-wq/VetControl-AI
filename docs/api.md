@@ -1,4 +1,4 @@
-# VetControl AI — API de propietarios, mascotas e historias clínicas
+# VetControl AI — API de propietarios, mascotas, veterinarios e historias clínicas
 
 Base: `http://localhost:3000/api`. Todas las rutas requieren el token del login existente:
 
@@ -51,6 +51,36 @@ POST /api/mascotas
   "peso_kg": 28.5, "esterilizado": true, "microchip": "985112003456789"
 }
 ```
+
+## Veterinarios (Ep4-Hu5)
+
+Todo este recurso es exclusivo del **administrador** (los demás roles reciben 403).
+
+| Método | Ruta | Descripción |
+|---|---|---|
+| GET | `/veterinarios?q=&especialidad=&activo=&pagina=&limite=` | lista paginada |
+| POST | `/veterinarios` | crea la cuenta (rol veterinario) y su perfil |
+| GET | `/veterinarios/:id` | detalle |
+| PUT | `/veterinarios/:id` | edita nombre, apellido, tarjeta, especialidad o teléfono (no correo ni contraseña) |
+| DELETE | `/veterinarios/:id` | desactiva la cuenta (ya no puede iniciar sesión; su historial se conserva) |
+| GET | `/veterinarios/:id/horarios` | horarios de atención |
+| POST | `/veterinarios/:id/horarios` | agrega un horario |
+| PUT | `/veterinarios/:id/horarios/:idHorario` | modifica un horario de ese veterinario |
+| DELETE | `/veterinarios/:id/horarios/:idHorario` | elimina un horario |
+
+```json
+POST /api/veterinarios
+{
+  "nombre": "Sofía", "apellido": "Díaz", "correo": "sofia@vetcontrol.com",
+  "contrasena": "Temporal123", "tarjeta_profesional": "MV-99999",
+  "especialidad": "Dermatología", "telefono": "3001234567"
+}
+
+POST /api/veterinarios/1/horarios
+{ "dia_semana": 1, "hora_inicio": "08:00", "hora_fin": "12:00" }
+```
+
+`dia_semana` va de 1 (lunes) a 7 (domingo) y `hora_fin` debe ser posterior a `hora_inicio`. La tarjeta profesional y el correo no se pueden repetir (409).
 
 ## Historias clínicas (Ep3-Hu8)
 

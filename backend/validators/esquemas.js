@@ -129,6 +129,42 @@ const mensajeEnviar = z.object({
         .max(1000, 'El mensaje no puede tener más de 1000 caracteres'),
 });
 
+// --------------------------- Veterinarios ---------------------------
+const veterinarioCrear = z.object({
+    nombre: texto(80),
+    apellido: texto(80),
+    correo: z.email('Correo inválido'),
+    contrasena: z.string().min(8, 'La contraseña debe tener al menos 8 caracteres'),
+    tarjeta_profesional: texto(30),
+    especialidad: texto(80),
+    telefono: telefono.optional(),
+});
+
+// Para actualizar no se permite cambiar la contraseña ni el correo por esta vía
+const veterinarioActualizar = veterinarioCrear
+    .omit({ contrasena: true, correo: true })
+    .partial()
+    .refine(noVacio, alMenosUno);
+
+// 1 = lunes ... 7 = domingo (igual que el CHECK de horarios_veterinario en schema.sql)
+const diaSemana = z.number().int().min(1, 'Debe estar entre 1 (lunes) y 7 (domingo)')
+    .max(7, 'Debe estar entre 1 (lunes) y 7 (domingo)');
+const hora = z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, 'Formato esperado HH:MM');
+const finDespuesDeInicio = (h) => !h.hora_inicio || !h.hora_fin || h.hora_fin > h.hora_inicio;
+const mensajeRango = { message: 'La hora de fin debe ser posterior a la de inicio', path: ['hora_fin'] };
+
+const horarioCrear = z.object({
+    dia_semana: diaSemana,
+    hora_inicio: hora,
+    hora_fin: hora,
+}).refine(finDespuesDeInicio, mensajeRango);
+
+const horarioActualizar = z.object({
+    dia_semana: diaSemana,
+    hora_inicio: hora,
+    hora_fin: hora,
+}).partial().refine(noVacio, alMenosUno).refine(finDespuesDeInicio, mensajeRango);
+
 module.exports = {
     parametroId,
     propietarioCrear, propietarioActualizar,
@@ -136,4 +172,5 @@ module.exports = {
     historiaActualizar, consultaCrear, consultaActualizar,
     tratamientoCrear, tratamientoActualizar, vacunaCrear, evolucionCrear,
     conversacionCrear, mensajeEnviar,
+    veterinarioCrear, veterinarioActualizar, horarioCrear, horarioActualizar,
 };

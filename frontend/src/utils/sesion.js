@@ -41,6 +41,9 @@ export function cerrarSesion() {
   }
 }
 
+/** Rol del usuario con sesión ('propietario' | 'veterinario' | 'administrador') o null. */
+export const rolActual = () => obtenerSesion()?.usuario?.rol ?? null;
+
 /** Devuelve { token, usuario } si hay una sesión vigente; si el token venció, la borra. */
 export function obtenerSesion() {
   let sesion = respaldo;
