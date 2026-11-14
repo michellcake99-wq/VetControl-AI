@@ -5,6 +5,7 @@ const validar = require('../middleware/validar');
 const esquemas = require('../validators/esquemas');
 const c = require('../controllers/mascotasController');
 const h = require('../controllers/historiasController');
+const cm = require('../controllers/consultasMascotaController');
 
 const router = express.Router();
 const id = validar(esquemas.parametroId, 'params');
@@ -23,5 +24,9 @@ router.delete('/:id', permitirRoles('veterinario', 'administrador'), id, c.desac
 
 // Hu8: historia clínica desde la mascota
 router.get('/:id/historia', id, h.obtenerPorMascota);
+
+// Hu9: consultas y tratamientos de la mascota
+router.get('/:id/consultas', id, cm.listarConsultas);
+router.get('/:id/tratamientos', id, cm.listarTratamientos);
 
 module.exports = router;
