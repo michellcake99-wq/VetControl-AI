@@ -1,4 +1,4 @@
-// Ep8-Hu1: envío de mensajes entre propietario y veterinario
+// Ep8-Hu1 (envío de mensajes) y Ep8-Hu2 (recepción en tiempo real)
 const http = require('http');
 const { Server } = require('socket.io');
 const { io: conectar } = require('socket.io-client');
@@ -17,6 +17,14 @@ function abrirSocket(token) {
         sockets.push(s);
         s.on('connect', () => resolve(s));
         s.on('connect_error', reject);
+    });
+}
+
+/** Espera el próximo evento `nombre` del socket (falla si tarda más de `ms`). */
+function esperarEvento(socket, nombre, ms = 2000) {
+    return new Promise((resolve, reject) => {
+        const t = setTimeout(() => reject(new Error(`No llegó "${nombre}" en ${ms} ms`)), ms);
+        socket.once(nombre, (datos) => { clearTimeout(t); resolve(datos); });
     });
 }
 
@@ -91,7 +99,7 @@ describe('Conversaciones (REST)', () => {
         const deAna = await ana.get('/api/conversaciones');
         expect(deAna.status).toBe(200);
         expect(deAna.body).toHaveLength(2);
-        expect(deAna.body[0]).toMatchObject({ nombre_contacto: 'Laura Quintero' });
+        expect(deAna.body[0]).toMatchObject({ nombre_contacto: 'Laura Quintero', no_leidos: 0 });
 
         const delVet = await vet.get('/api/conversaciones');
         expect(delVet.body.find((c) => c.id_conversacion === idConMax))
@@ -114,7 +122,7 @@ describe('Conversaciones (REST)', () => {
     });
 });
 
-describe('Envío de mensajes (Socket.IO)', () => {
+describe('Chat en tiempo real (Socket.IO)', () => {
     let sAna, sVet, idCon;
 
     beforeAll(async () => {
@@ -128,22 +136,26 @@ describe('Envío de mensajes (Socket.IO)', () => {
         await expect(abrirSocket('token-falso')).rejects.toThrow(/token/i);
     });
 
-    test('el propietario envía un mensaje y queda guardado con remitente, contenido y fecha', async () => {
+    test('el propietario envía y el veterinario lo recibe al instante; queda guardado', async () => {
+        const llega = esperarEvento(sVet, 'nuevo_mensaje');
+        const inicio = Date.now();
         const ack = await enviar(sAna, { id_conversacion: idCon, contenido: '  Hola, Max no quiere comer  ' });
-        expect(ack.mensaje).toMatchObject({ id_conversacion: idCon, contenido: 'Hola, Max no quiere comer' });
+        const recibido = await llega;
+
+        expect(Date.now() - inicio).toBeLessThan(2000);
+        expect(ack.mensaje).toMatchObject({ id_conversacion: idCon, contenido: 'Hola, Max no quiere comer', leido: false });
+        expect(recibido).toEqual(ack.mensaje);
 
         const { rows } = await pool.query('SELECT * FROM mensajes WHERE id_mensaje = $1', [ack.mensaje.id_mensaje]);
         expect(rows[0]).toMatchObject({ id_remitente: 4, contenido: 'Hola, Max no quiere comer' });
         expect(rows[0].fecha_envio).toBeInstanceOf(Date);
     });
 
-    test('el veterinario puede responder y ambos ven la conversación completa', async () => {
+    test('el veterinario puede responder', async () => {
+        const llega = esperarEvento(sAna, 'nuevo_mensaje');
         const ack = await enviar(sVet, { id_conversacion: idCon, contenido: '¿Desde cuándo?' });
         expect(ack.error).toBeUndefined();
-        expect(ack.mensaje.id_remitente).toBe(2);
-
-        const historial = await ana.get(`/api/conversaciones/${idCon}/mensajes`);
-        expect(historial.body.map((m) => m.contenido)).toEqual(['Hola, Max no quiere comer', '¿Desde cuándo?']);
+        expect((await llega).id_remitente).toBe(2);
     });
 
     test('no se envían mensajes vacíos ni de más de 1000 caracteres', async () => {
@@ -156,5 +168,30 @@ describe('Envío de mensajes (Socket.IO)', () => {
         const sCarlos = await abrirSocket(tokens['carlos@correo.com']);
         expect((await enviar(sCarlos, { id_conversacion: idCon, contenido: 'hola' })).error).toMatch(/permiso/i);
         expect((await enviar(sCarlos, { id_conversacion: 999, contenido: 'hola' })).error).toMatch(/no encontrad/i);
+    });
+
+    test('si el destinatario no está conectado, ve el mensaje y el contador de no leídos al volver', async () => {
+        sVet.disconnect();
+        await enviar(sAna, { id_conversacion: idCon, contenido: 'Mensaje mientras no estaba' });
+
+        const lista = await vet.get('/api/conversaciones');
+        const con = lista.body.find((c) => c.id_conversacion === idCon);
+        expect(con.no_leidos).toBe(3); // los 3 mensajes de Ana que el veterinario no ha abierto
+        expect(con.ultimo_mensaje).toMatchObject({ contenido: 'Mensaje mientras no estaba' });
+
+        const mensajes = await vet.get(`/api/conversaciones/${idCon}/mensajes`);
+        expect(mensajes.body.at(-1).contenido).toBe('Mensaje mientras no estaba');
+    });
+
+    test('al abrir la conversación los mensajes recibidos se marcan como leídos', async () => {
+        const r = await vet.put(`/api/conversaciones/${idCon}/leidos`);
+        expect(r.status).toBe(200);
+        expect(r.body).toEqual({ actualizados: 3 });
+        const con = (await vet.get('/api/conversaciones')).body.find((c) => c.id_conversacion === idCon);
+        expect(con.no_leidos).toBe(0);
+        // Los mensajes que envió el veterinario siguen sin leer para Ana
+        const deAna = (await ana.get('/api/conversaciones')).body.find((c) => c.id_conversacion === idCon);
+        expect(deAna.no_leidos).toBe(1);
+        expect((await carlos.put(`/api/conversaciones/${idCon}/leidos`)).status).toBe(403);
     });
 });
