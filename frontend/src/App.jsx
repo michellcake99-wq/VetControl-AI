@@ -1,5 +1,6 @@
 import { Navigate, Route, Routes } from 'react-router-dom';
 import Layout from './components/Layout.jsx';
+import PaginaPublica from './pages/PaginaPublica.jsx';
 import Inicio from './pages/Inicio.jsx';
 import EnConstruccion from './pages/EnConstruccion.jsx';
 import IniciarSesion from './pages/IniciarSesion.jsx';
@@ -10,11 +11,18 @@ import RutaProtegida from './components/RutaProtegida.jsx';
 export default function App() {
   return (
     <Routes>
+      {/* Página principal pública */}
+      <Route index element={<PaginaPublica />} />
       <Route path="/iniciar-sesion" element={<IniciarSesion />} />
       <Route path="/registro" element={<Registro />} />
       <Route path="/recuperar-contrasena" element={<RecuperarContrasena />} />
-      <Route element={<RutaProtegida><Layout /></RutaProtegida>}>
-        <Route index element={<Navigate to="/inicio" replace />} />
+      <Route
+        element={
+          <RutaProtegida>
+            <Layout />
+          </RutaProtegida>
+        }
+      >
         <Route path="/inicio" element={<Inicio />} />
         <Route
           path="/mascotas"
