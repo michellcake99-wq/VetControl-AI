@@ -22,10 +22,15 @@ const SELECT_CITA = `
 // Quién puede pasar una cita de un estado a otro (estado actual -> nuevo estado -> roles)
 const PERSONAL = ['veterinario', 'administrador'];
 const TODOS = ['propietario', 'veterinario', 'administrador'];
+// Ep3-Hu14: el veterinario confirma la cita solicitada («programada» -> «confirmada»)
+const ACTIVA = { atendida: PERSONAL, cancelada: TODOS, no_asistio: PERSONAL };
 const TRANSICIONES = {
-  programada: { atendida: PERSONAL, cancelada: TODOS, no_asistio: PERSONAL },
-  reprogramada: { atendida: PERSONAL, cancelada: TODOS, no_asistio: PERSONAL },
+  programada: { confirmada: PERSONAL, ...ACTIVA },
+  reprogramada: { confirmada: PERSONAL, ...ACTIVA },
+  confirmada: ACTIVA,
 };
+// Estados que ocupan el horario del veterinario
+const ESTADOS_ACTIVOS = "('programada', 'confirmada', 'reprogramada')";
 
 const hora = (fecha) =>
   new Intl.DateTimeFormat('es-CO', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: ZONA }).format(new Date(fecha));
@@ -53,7 +58,7 @@ async function verificarVeterinarioActivo(idVeterinario) {
 
 // POST /api/citas
 async function crear(req, res) {
-  const { id_mascota, id_veterinario, fecha_hora, duracion_min, motivo } = req.body;
+  const { id_mascota, id_veterinario, fecha_hora, duracion_min, motivo, tipo_consulta } = req.body;
 
   // El propietario solo agenda para sus mascotas (403) y un veterinario solo en su propia agenda
   const mascota = await obtenerMascotaAutorizada(id_mascota, req.usuario);
@@ -70,7 +75,7 @@ async function crear(req, res) {
     const cruce = await cliente.query(
       `SELECT fecha_hora, duracion_min FROM citas
        WHERE id_veterinario = $1
-         AND estado IN ('programada', 'reprogramada')
+         AND estado IN ${ESTADOS_ACTIVOS}
          AND fecha_hora < $2::timestamptz + ($3::int * interval '1 minute')
          AND fecha_hora + (duracion_min * interval '1 minute') > $2::timestamptz
        ORDER BY fecha_hora LIMIT 1`,
@@ -83,8 +88,14 @@ async function crear(req, res) {
       throw new ErrorHttp(409, mensaje, [{ campo: 'fecha_hora', mensaje }]);
     }
 
-    // El estado inicial lo pone la base de datos: "programada"
-    const { text, values } = construirInsert('citas', { id_mascota, id_veterinario, fecha_hora, duracion_min, motivo }, 'id_cita');
+    // La cita que pide el propietario nace «programada» (solicitada) y espera confirmación;
+    // la que agenda el personal de la clínica (veterinario o administrador) nace ya «confirmada».
+    const estado = req.usuario.rol === 'propietario' ? 'programada' : 'confirmada';
+    const { text, values } = construirInsert(
+      'citas',
+      { id_mascota, id_veterinario, fecha_hora, duracion_min, motivo, tipo_consulta, estado },
+      'id_cita'
+    );
     return (await cliente.query(text, values)).rows[0].id_cita;
   });
 
@@ -127,6 +138,37 @@ async function listar(req, res) {
   res.json(respuestaPaginada(rows, total, pag));
 }
 
+// GET /api/citas/veterinarios — veterinarios activos a los que se les puede pedir cita (Ep3-Hu14)
+// es_yo indica cuál es el veterinario que consulta (para agendar en su propia agenda)
+async function listarVeterinarios(req, res) {
+  const { rows } = await query(
+    `SELECT v.id_veterinario, u.nombre, u.apellido, v.especialidad,
+            v.id_veterinario IS NOT DISTINCT FROM $1 AS es_yo
+       FROM veterinarios v JOIN usuarios u ON u.id_usuario = v.id_usuario
+      WHERE u.activo
+      ORDER BY u.nombre, u.apellido`,
+    [req.usuario.id_veterinario ?? null]
+  );
+  res.json(rows);
+}
+
+// GET /api/citas/ocupados?id_veterinario=&fecha=AAAA-MM-DD
+// Horarios ya tomados de un veterinario en un día (sin datos de otras personas) (Ep3-Hu14)
+async function listarOcupados(req, res) {
+  const { id_veterinario, fecha } = req.query;
+  const { rows } = await query(
+    `SELECT fecha_hora AS inicio, fecha_hora + (duracion_min * interval '1 minute') AS fin
+       FROM citas
+      WHERE id_veterinario = $1
+        AND estado IN ${ESTADOS_ACTIVOS}
+        AND fecha_hora >= ($2::date)::timestamp AT TIME ZONE '${ZONA}'
+        AND fecha_hora <  (($2::date) + 1)::timestamp AT TIME ZONE '${ZONA}'
+      ORDER BY fecha_hora`,
+    [id_veterinario, fecha]
+  );
+  res.json(rows);
+}
+
 // GET /api/citas/:id
 async function obtener(req, res) {
   const cita = await buscarCita(Number(req.params.id));
@@ -158,4 +200,4 @@ async function cambiarEstado(req, res) {
   res.json(await buscarCita(cita.id_cita));
 }
 
-module.exports = { crear, listar, obtener, cambiarEstado };
+module.exports = { crear, listar, obtener, cambiarEstado, listarVeterinarios, listarOcupados };

@@ -21,6 +21,9 @@
 | `POST /api/citas`                            | ✅ para sus mascotas                    | ✅ en su propia agenda | ✅ |
 | `PUT /api/citas/:id/estado`                  | según la transición permitida          | según la transición permitida | según la transición permitida |
 | `/api/conversaciones/**` y chat (Socket.IO)  | ✅ solo sus conversaciones              | ✅ solo sus conversaciones | ❌ (no participa del chat) |
+| `GET /api/vacunas/catalogo`                  | ✅                                      | ✅          | ✅ |
+| `PUT /api/vacunas/:id` (corregir vacuna)     | ❌ 403                                  | ✅          | ❌ 403 |
+| `POST /api/ia/consultar`                     | ✅ (con `id_mascota`, solo sus mascotas) | ✅         | ✅ |
 
 ### Cómo se aplica — backend
 1. `authMiddleware.js` verifica el JWT en cada endpoint protegido. Sin token o expirado → `401`.
@@ -47,3 +50,22 @@ Frontend — se prueba a mano con los usuarios de `database/seed.sql` (clave `Ve
 - [ ] Con cada rol, confirmar que el Sidebar muestra solo sus opciones.
 - [ ] Entrar a `/veterinarios` sin ser administrador redirige a `/acceso-denegado`.
 - [ ] Recargar la página con sesión iniciada mantiene al usuario en la misma pantalla.
+
+## Asistente de IA (Ep6-Hu1): configuración
+
+El backend usa por defecto **Groq**, que tiene un nivel gratuito sin tarjeta de crédito.
+
+1. Crear una cuenta en https://console.groq.com y, en **API Keys**, crear una clave.
+2. En `backend/.env` agregar `IA_API_KEY=<la clave>` (ver `backend/.env.example`). La clave **nunca** se sube a GitHub.
+3. Reiniciar el backend y probar con la carpeta *4. Asistente de IA* de la colección de Postman (`docs/`).
+
+El modelo (`IA_MODELO`), el tiempo máximo de espera y el límite de consultas por usuario se cambian desde el `.env`, sin tocar el código. Detalles en `docs/api.md`.
+
+## Migraciones para bases con datos (Supabase)
+
+`database/schema.sql` **borra y vuelve a crear** todas las tablas, así que no debe ejecutarse en una base que ya tiene datos. Para actualizar Supabase se ejecutan, en orden, los archivos de `database/migraciones/` (SQL Editor → pegar → Run). No borran nada y se pueden ejecutar más de una vez.
+
+| Archivo | Historia | Qué hace |
+|---|---|---|
+| `001_ep4-hu1_catalogo_vacunas.sql` | Ep4-Hu1 | Crea el catálogo de vacunas y enlaza las vacunas ya registradas |
+| `002_ep6-hu1_interacciones_ia.sql` | Ep6-Hu1 | Crea la tabla `interacciones_ia` |

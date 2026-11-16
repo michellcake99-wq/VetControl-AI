@@ -2,7 +2,7 @@ const { z } = require('zod');
 
 // Estados de una cita, tal como están en el tipo estado_cita de database/schema.sql.
 // Equivalencias con los criterios de la historia: «solicitada» = programada, «completada» = atendida.
-const ESTADOS_CITA = ['programada', 'reprogramada', 'cancelada', 'atendida', 'no_asistio'];
+const ESTADOS_CITA = ['programada', 'confirmada', 'reprogramada', 'cancelada', 'atendida', 'no_asistio'];
 
 const fechaHora = z.iso.datetime({
   offset: true,
@@ -11,6 +11,17 @@ const fechaHora = z.iso.datetime({
 const fechaDia = z.iso.date({ message: 'Fecha inválida (use AAAA-MM-DD)' });
 
 // Ep3-Hu10: una cita nace con estado "programada" (la «solicitada» de los criterios) y no puede estar en el pasado
+// Tipo de consulta de la cita (se muestra en el formulario y en la agenda)
+const TIPOS_CONSULTA = [
+  'consulta_general',
+  'vacunacion',
+  'control',
+  'desparasitacion',
+  'cirugia',
+  'urgencia',
+  'otro',
+];
+
 const citaCrear = z
   .object({
     id_mascota: z.number({ message: 'Es obligatorio' }).int().positive(),
@@ -18,6 +29,7 @@ const citaCrear = z
     fecha_hora: fechaHora,
     duracion_min: z.number().int().min(10, 'Mínimo 10 minutos').max(240, 'Máximo 240 minutos').default(30),
     motivo: z.string().trim().min(1, 'Es obligatorio').max(200, 'Máximo 200 caracteres'),
+    tipo_consulta: z.enum(TIPOS_CONSULTA, { message: 'Tipo de consulta inválido' }).default('consulta_general'),
   })
   .refine((d) => new Date(d.fecha_hora) > new Date(), {
     message: 'No se puede agendar una cita en una fecha u hora pasada',
@@ -26,8 +38,8 @@ const citaCrear = z
 
 // "programada" no se puede elegir: es el estado inicial
 const citaEstado = z.object({
-  estado: z.enum(['cancelada', 'atendida', 'no_asistio'], {
-    message: 'Estado inválido (use cancelada, atendida o no_asistio)',
+  estado: z.enum(['confirmada', 'cancelada', 'atendida', 'no_asistio'], {
+    message: 'Estado inválido (use confirmada, cancelada, atendida o no_asistio)',
   }),
   observaciones: z.string().trim().max(1000, 'Máximo 1000 caracteres').nullish(),
 });
@@ -42,4 +54,10 @@ const citaListado = z.object({
   orden: z.enum(['asc', 'desc'], { message: 'Use asc o desc' }).optional(),
 });
 
-module.exports = { ESTADOS_CITA, citaCrear, citaEstado, citaListado };
+// Ep3-Hu14: horarios ocupados de un veterinario en un día
+const citaOcupados = z.object({
+  id_veterinario: z.coerce.number({ message: 'Es obligatorio' }).int().positive('Id inválido'),
+  fecha: fechaDia,
+});
+
+module.exports = { ESTADOS_CITA, TIPOS_CONSULTA, citaCrear, citaEstado, citaListado, citaOcupados };

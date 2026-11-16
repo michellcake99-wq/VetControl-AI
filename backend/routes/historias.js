@@ -22,6 +22,7 @@ historias.post('/:id/vacunas', veterinario, id, validar(esquemas.vacunaCrear), h
 // /api/consultas
 const consultas = express.Router();
 consultas.use(verificarToken, cargarPerfil);
+consultas.get('/', h.listarTodasConsultas); // Ep3-Hu13: módulo de consultas
 consultas.get('/:id', id, h.obtenerConsulta);
 consultas.put('/:id', veterinario, id, validar(esquemas.consultaActualizar), h.actualizarConsulta);
 consultas.post('/:id/tratamientos', veterinario, id, validar(esquemas.tratamientoCrear), h.crearTratamiento);
@@ -33,4 +34,10 @@ tratamientos.put('/:id', veterinario, id, validar(esquemas.tratamientoActualizar
 tratamientos.get('/:id/evoluciones', id, h.listarEvoluciones);
 tratamientos.post('/:id/evoluciones', permitirRoles('propietario'), id, validar(esquemas.evolucionCrear), h.crearEvolucion);
 
-module.exports = { historias, consultas, tratamientos };
+// /api/vacunas   (Ep4-Hu1)
+const vacunas = express.Router();
+vacunas.use(verificarToken, cargarPerfil);
+vacunas.get('/catalogo', h.listarCatalogo);
+vacunas.put('/:id', veterinario, id, validar(esquemas.vacunaActualizar), h.actualizarVacuna);
+
+module.exports = { historias, consultas, tratamientos, vacunas };

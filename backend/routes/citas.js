@@ -13,6 +13,9 @@ const id = validar(esquemas.parametroId, 'params');
 router.use(verificarToken, cargarPerfil);
 
 router.get('/', validar(esquemasCitas.citaListado, 'query'), c.listar);
+// Ep3-Hu14: datos para el formulario de solicitud (van antes de "/:id")
+router.get('/veterinarios', c.listarVeterinarios);
+router.get('/ocupados', validar(esquemasCitas.citaOcupados, 'query'), c.listarOcupados);
 router.post('/', validar(esquemasCitas.citaCrear), c.crear);
 router.get('/:id', id, c.obtener);
 router.put('/:id/estado', id, validar(esquemasCitas.citaEstado), c.cambiarEstado);

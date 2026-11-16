@@ -1,3 +1,9 @@
+export const ETIQUETA_SEXO = {
+  macho: 'Macho',
+  hembra: 'Hembra',
+  desconocido: 'Sexo no registrado',
+};
+
 /** Convierte una fecha de nacimiento (AAAA-MM-DD) en un texto legible de edad. */
 export function calcularEdad(fechaNacimientoISO) {
   if (!fechaNacimientoISO) return 'Edad no registrada';

@@ -7,8 +7,9 @@ const protectedRoutes = require('./routes/protected');
 const propietariosRoutes = require('./routes/propietarios');
 const mascotasRoutes = require('./routes/mascotas');
 const veterinariosRoutes = require('./routes/veterinarios');
+const iaRoutes = require('./routes/ia');
 const manejoErrores = require('./middleware/manejoErrores');
-const { historias, consultas, tratamientos } = require('./routes/historias');
+const { historias, consultas, tratamientos, vacunas } = require('./routes/historias');
 const citasRoutes = require('./routes/citas');
 const conversacionesRoutes = require('./routes/conversaciones');
 const { iniciarChat } = require('./sockets/chat');
@@ -17,7 +18,8 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 // Permitir que Express reciba datos JSON
-app.use(express.json());
+// 1 MB alcanza para la foto de una mascota (llega ya reducida desde el navegador)
+app.use(express.json({ limit: '1mb' }));
 
 // Rutas de autenticación
 app.use('/api/auth', authRoutes);
@@ -36,6 +38,10 @@ app.use('/api/veterinarios', veterinariosRoutes);
 app.use('/api/historias', historias);
 app.use('/api/consultas', consultas);
 app.use('/api/tratamientos', tratamientos);
+// Ep4-Hu1: catálogo de vacunas y corrección de registros
+app.use('/api/vacunas', vacunas);
+// Ep6-Hu1: asistente de inteligencia artificial
+app.use('/api/ia', iaRoutes);
 
 // Hu10: citas veterinarias
 app.use('/api/citas', citasRoutes);

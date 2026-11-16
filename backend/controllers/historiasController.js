@@ -1,11 +1,20 @@
 const { query, enTransaccion, construirInsert, construirUpdate } = require('../utils/baseDatos');
 const { ErrorHttp, noEncontrado, sinPermiso } = require('../utils/errores');
 const { paginar, respuestaPaginada } = require('../utils/paginacion');
-const { obtenerMascotaAutorizada, obtenerHistoriaAutorizada } = require('../utils/acceso');
+const { esPersonal, obtenerMascotaAutorizada, obtenerHistoriaAutorizada } = require('../utils/acceso');
 
 const NOMBRE_VETERINARIO = `(SELECT u.nombre || ' ' || u.apellido FROM veterinarios v
                               JOIN usuarios u ON u.id_usuario = v.id_usuario
                              WHERE v.id_veterinario = c.id_veterinario) AS nombre_veterinario`;
+
+// Ep4-Hu1: datos de una vacuna aplicada + quién la aplicó + datos del catálogo
+const SELECT_VACUNA = `SELECT va.*,
+        (SELECT u.nombre || ' ' || u.apellido FROM veterinarios v JOIN usuarios u ON u.id_usuario = v.id_usuario
+          WHERE v.id_veterinario = va.id_veterinario) AS nombre_veterinario,
+        cv.especie AS especie_catalogo, cv.dias_refuerzo
+   FROM vacunas va LEFT JOIN catalogo_vacunas cv ON cv.id_catalogo = va.id_catalogo`;
+// Carné en orden cronológico (de la primera aplicación a la más reciente)
+const ORDEN_CARNE = 'ORDER BY va.fecha_aplicacion, va.id_vacuna';
 
 function exigirPerfilVeterinario(usuario) {
     if (!usuario.id_veterinario) throw sinPermiso('Solo un veterinario puede realizar esta acción');
@@ -20,8 +29,15 @@ async function historiaCompleta(idHistoria) {
             `SELECT h.*, json_build_object(
                     'id_mascota', m.id_mascota, 'nombre', m.nombre, 'especie', m.especie, 'raza', m.raza,
                     'sexo', m.sexo, 'fecha_nacimiento', m.fecha_nacimiento, 'peso_kg', m.peso_kg,
-                    'id_propietario', m.id_propietario) AS mascota
+                    'color', m.color, 'esterilizado', m.esterilizado, 'microchip', m.microchip,
+                    'foto', m.foto, 'id_propietario', m.id_propietario) AS mascota,
+                    json_build_object(
+                    'nombre', u.nombre, 'apellido', u.apellido, 'correo', u.correo,
+                    'tipo_documento', p.tipo_documento, 'numero_documento', p.numero_documento,
+                    'telefono', p.telefono, 'direccion', p.direccion) AS propietario
                FROM historias_clinicas h JOIN mascotas m ON m.id_mascota = h.id_mascota
+               JOIN propietarios p ON p.id_propietario = m.id_propietario
+               JOIN usuarios u ON u.id_usuario = p.id_usuario
               WHERE h.id_historia = $1`,
             [idHistoria]
         ),
@@ -31,7 +47,7 @@ async function historiaCompleta(idHistoria) {
               WHERE c.id_historia = $1 ORDER BY t.fecha_inicio DESC`,
             [idHistoria]
         ),
-        query('SELECT * FROM vacunas WHERE id_historia = $1 ORDER BY fecha_aplicacion DESC', [idHistoria]),
+        query(`${SELECT_VACUNA} WHERE va.id_historia = $1 ${ORDEN_CARNE}`, [idHistoria]),
     ]);
 
     const hoy = new Date().toISOString().slice(0, 10);
@@ -133,11 +149,82 @@ async function obtenerConsultaAutorizada(idConsulta, usuario) {
     return rows[0];
 }
 
-// GET /api/consultas/:id
+// GET /api/consultas/:id   detalle + datos del paciente y del propietario (hoja de la consulta)
 async function obtenerConsulta(req, res) {
     const consulta = await obtenerConsultaAutorizada(Number(req.params.id), req.usuario);
-    const t = await query('SELECT * FROM tratamientos WHERE id_consulta = $1 ORDER BY id_tratamiento', [consulta.id_consulta]);
-    res.json({ ...consulta, tratamientos: t.rows });
+    const [t, datos] = await Promise.all([
+        query('SELECT * FROM tratamientos WHERE id_consulta = $1 ORDER BY id_tratamiento', [consulta.id_consulta]),
+        query(
+            `SELECT h.numero AS numero_historia,
+                    (SELECT u.nombre || ' ' || u.apellido FROM veterinarios v JOIN usuarios u ON u.id_usuario = v.id_usuario
+                      WHERE v.id_veterinario = $2) AS nombre_veterinario,
+                    (SELECT v.tarjeta_profesional FROM veterinarios v WHERE v.id_veterinario = $2) AS tarjeta_veterinario,
+                    json_build_object(
+                      'id_mascota', m.id_mascota, 'nombre', m.nombre, 'especie', m.especie, 'raza', m.raza,
+                      'sexo', m.sexo, 'fecha_nacimiento', m.fecha_nacimiento, 'peso_kg', m.peso_kg,
+                      'color', m.color, 'esterilizado', m.esterilizado, 'microchip', m.microchip, 'foto', m.foto) AS mascota,
+                    json_build_object(
+                      'nombre', u.nombre, 'apellido', u.apellido, 'correo', u.correo,
+                      'tipo_documento', p.tipo_documento, 'numero_documento', p.numero_documento,
+                      'telefono', p.telefono, 'direccion', p.direccion) AS propietario
+               FROM historias_clinicas h
+               JOIN mascotas m ON m.id_mascota = h.id_mascota
+               JOIN propietarios p ON p.id_propietario = m.id_propietario
+               JOIN usuarios u ON u.id_usuario = p.id_usuario
+              WHERE h.id_historia = $1`,
+            [consulta.id_historia, consulta.id_veterinario]
+        ),
+    ]);
+    res.json({
+        ...consulta,
+        ...datos.rows[0],
+        tratamientos: t.rows,
+        // Solo el veterinario que registró la consulta la puede editar
+        puede_editar: Boolean(req.usuario.id_veterinario) && req.usuario.id_veterinario === consulta.id_veterinario,
+    });
+}
+
+// GET /api/consultas?q=&id_mascota=&desde=&hasta=&pagina=&limite=
+// Ep3-Hu13: todas las consultas (la más reciente primero). El propietario solo ve las de sus mascotas.
+async function listarTodasConsultas(req, res) {
+    const pag = paginar(req);
+    const parametros = [];
+    const condiciones = ['TRUE'];
+    const agregar = (sql, valor) => {
+        parametros.push(valor);
+        condiciones.push(sql.replaceAll('?', `$${parametros.length}`));
+    };
+    if (!esPersonal(req.usuario)) agregar('m.id_propietario = ?', req.usuario.id_propietario);
+    if (req.query.id_mascota) agregar('m.id_mascota = ?', Number(req.query.id_mascota) || 0);
+    if (req.query.q) agregar('(m.nombre ILIKE ? OR c.motivo ILIKE ? OR c.diagnostico ILIKE ?)', `%${req.query.q}%`);
+    for (const [campo, sql] of [['desde', 'c.fecha >= ?::date'], ['hasta', 'c.fecha < (?::date + 1)']]) {
+        if (!req.query[campo]) continue;
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(req.query[campo])) {
+            throw new ErrorHttp(400, `El filtro «${campo}» debe tener el formato AAAA-MM-DD`);
+        }
+        agregar(sql, req.query[campo]);
+    }
+
+    const desde = `FROM consultas c
+                   JOIN historias_clinicas h ON h.id_historia = c.id_historia
+                   JOIN mascotas m ON m.id_mascota = h.id_mascota
+                   JOIN propietarios p ON p.id_propietario = m.id_propietario
+                   JOIN usuarios u ON u.id_usuario = p.id_usuario
+                  WHERE ${condiciones.join(' AND ')}`;
+    const total = (await query(`SELECT count(*)::int AS n ${desde}`, parametros)).rows[0].n;
+    const { rows } = await query(
+        `SELECT c.id_consulta, c.fecha, c.motivo, c.diagnostico, c.id_veterinario, c.proximo_control,
+                ${NOMBRE_VETERINARIO},
+                h.id_historia, h.numero AS numero_historia,
+                m.id_mascota, m.nombre AS nombre_mascota, m.especie, m.foto,
+                u.nombre || ' ' || u.apellido AS nombre_propietario,
+                (SELECT count(*)::int FROM tratamientos t WHERE t.id_consulta = c.id_consulta) AS total_tratamientos
+           ${desde}
+          ORDER BY c.fecha DESC, c.id_consulta DESC
+          LIMIT $${parametros.length + 1} OFFSET $${parametros.length + 2}`,
+        [...parametros, pag.limite, pag.offset]
+    );
+    res.json(respuestaPaginada(rows, total, pag));
 }
 
 // PUT /api/consultas/:id   (solo el veterinario que la registró)
@@ -232,31 +319,86 @@ async function crearEvolucion(req, res) {
 //  Vacunas
 // ------------------------------------------------------------------
 
-// GET /api/historias/:id/vacunas
+// GET /api/historias/:id/vacunas   carné de vacunación (orden cronológico)
 async function listarVacunas(req, res) {
     const historia = await obtenerHistoriaAutorizada(Number(req.params.id), req.usuario);
-    const { rows } = await query(
-        'SELECT * FROM vacunas WHERE id_historia = $1 ORDER BY fecha_aplicacion DESC',
-        [historia.id_historia]
-    );
+    const { rows } = await query(`${SELECT_VACUNA} WHERE va.id_historia = $1 ${ORDEN_CARNE}`, [historia.id_historia]);
     res.json(rows);
 }
+
+/** Si se eligió una vacuna del catálogo, toma su nombre y revisa que sirva para la especie. */
+async function resolverCatalogo(datos, idHistoria) {
+    if (!datos.id_catalogo) return datos;
+    const { rows } = await query(
+        `SELECT cv.*, m.especie AS especie_mascota
+           FROM catalogo_vacunas cv, historias_clinicas h JOIN mascotas m ON m.id_mascota = h.id_mascota
+          WHERE cv.id_catalogo = $1 AND h.id_historia = $2`,
+        [datos.id_catalogo, idHistoria]
+    );
+    const vacuna = rows[0];
+    if (!vacuna || !vacuna.activo) {
+        throw new ErrorHttp(400, 'Datos inválidos', [{ campo: 'id_catalogo', mensaje: 'La vacuna no existe en el catálogo' }]);
+    }
+    if (vacuna.especie && vacuna.especie !== vacuna.especie_mascota) {
+        throw new ErrorHttp(400, 'Datos inválidos', [{
+            campo: 'id_catalogo', mensaje: `La vacuna ${vacuna.nombre} es para la especie ${vacuna.especie}`,
+        }]);
+    }
+    return { ...datos, nombre: vacuna.nombre };
+}
+
+const vacunaPorId = async (id) => (await query(`${SELECT_VACUNA} WHERE va.id_vacuna = $1`, [id])).rows[0];
 
 // POST /api/historias/:id/vacunas   (veterinario)
 async function crearVacuna(req, res) {
     exigirPerfilVeterinario(req.usuario);
     const historia = await obtenerHistoriaAutorizada(Number(req.params.id), req.usuario);
+    const datos = await resolverCatalogo(req.body, historia.id_historia);
     const { text, values } = construirInsert('vacunas', {
-        ...req.body, id_historia: historia.id_historia, id_veterinario: req.usuario.id_veterinario,
+        ...datos, id_historia: historia.id_historia, id_veterinario: req.usuario.id_veterinario,
     });
     const { rows } = await query(text, values);
-    res.status(201).json(rows[0]);
+    res.status(201).json(await vacunaPorId(rows[0].id_vacuna));
+}
+
+// PUT /api/vacunas/:id   (veterinario) corrige un registro ingresado por error
+async function actualizarVacuna(req, res) {
+    exigirPerfilVeterinario(req.usuario);
+    const actual = await vacunaPorId(Number(req.params.id));
+    if (!actual) throw noEncontrado('Vacuna');
+
+    // Se valida con las fechas finales (las que llegan + las que ya estaban guardadas)
+    const aplicacion = req.body.fecha_aplicacion ?? actual.fecha_aplicacion;
+    const proxima = 'proxima_dosis' in req.body ? req.body.proxima_dosis : actual.proxima_dosis;
+    if (proxima && proxima <= aplicacion) {
+        throw new ErrorHttp(400, 'Datos inválidos', [{
+            campo: 'proxima_dosis', mensaje: 'La próxima dosis debe ser posterior a la fecha de aplicación',
+        }]);
+    }
+
+    const cambios = await resolverCatalogo(req.body, actual.id_historia);
+    const { text, values } = construirUpdate('vacunas', 'id_vacuna', actual.id_vacuna, cambios);
+    await query(text, values);
+    res.json(await vacunaPorId(actual.id_vacuna));
+}
+
+// GET /api/vacunas/catalogo?especie=   vacunas disponibles (solo las activas)
+async function listarCatalogo(req, res) {
+    const especie = typeof req.query.especie === 'string' ? req.query.especie.toLowerCase() : null;
+    const { rows } = await query(
+        `SELECT id_catalogo, nombre, especie, descripcion, dias_refuerzo
+           FROM catalogo_vacunas
+          WHERE activo AND ($1::text IS NULL OR especie IS NULL OR especie = $1)
+          ORDER BY nombre`,
+        [especie]
+    );
+    res.json(rows);
 }
 
 module.exports = {
     obtenerPorMascota, obtener, actualizar,
-    listarConsultas, crearConsulta, obtenerConsulta, actualizarConsulta,
+    listarConsultas, crearConsulta, obtenerConsulta, actualizarConsulta, listarTodasConsultas,
     listarTratamientos, crearTratamiento, actualizarTratamiento,
     listarEvoluciones, crearEvolucion,
-    listarVacunas, crearVacuna,
+    listarVacunas, crearVacuna, actualizarVacuna, listarCatalogo,
 };

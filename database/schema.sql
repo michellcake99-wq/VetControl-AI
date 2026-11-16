@@ -15,8 +15,8 @@
 
 BEGIN;
 
-DROP TABLE IF EXISTS auditoria, horarios_veterinario, mensajes, conversaciones, recordatorios,
-  evoluciones_tratamiento, tratamientos, vacunas, consultas, historias_clinicas, citas, mascotas,
+DROP TABLE IF EXISTS interacciones_ia, auditoria, horarios_veterinario, mensajes, conversaciones, recordatorios,
+  evoluciones_tratamiento, tratamientos, vacunas, catalogo_vacunas, consultas, historias_clinicas, citas, mascotas,
   veterinarios, propietarios, usuarios, roles CASCADE;
 DROP TYPE IF EXISTS sexo_mascota, estado_cita, estado_tratamiento,
   tipo_recordatorio, estado_recordatorio CASCADE;
@@ -27,7 +27,7 @@ DROP FUNCTION IF EXISTS fn_actualizar_fecha, fn_crear_perfil, fn_crear_historia,
 --  Tipos enumerados
 -- ---------------------------------------------------------------------
 CREATE TYPE sexo_mascota        AS ENUM ('macho', 'hembra', 'desconocido');
-CREATE TYPE estado_cita         AS ENUM ('programada', 'reprogramada', 'cancelada', 'atendida', 'no_asistio');
+CREATE TYPE estado_cita         AS ENUM ('programada', 'confirmada', 'reprogramada', 'cancelada', 'atendida', 'no_asistio');
 CREATE TYPE estado_tratamiento  AS ENUM ('activo', 'finalizado', 'suspendido');
 CREATE TYPE tipo_recordatorio   AS ENUM ('cita', 'vacuna', 'tratamiento', 'seguimiento');
 CREATE TYPE estado_recordatorio AS ENUM ('pendiente', 'enviado', 'fallido', 'cancelado');
@@ -108,6 +108,8 @@ CREATE TABLE mascotas (
   esterilizado         BOOLEAN NOT NULL DEFAULT FALSE,
   microchip            VARCHAR(30) UNIQUE,
   observaciones        TEXT,
+  -- Foto de la mascota como "data URL" (imagen JPEG/PNG/WebP ya reducida en el navegador)
+  foto                 TEXT CHECK (foto IS NULL OR length(foto) <= 500000),
   activo               BOOLEAN NOT NULL DEFAULT TRUE,
   fecha_registro       TIMESTAMPTZ NOT NULL DEFAULT now(),
   fecha_actualizacion  TIMESTAMPTZ NOT NULL DEFAULT now()
@@ -125,6 +127,10 @@ CREATE TABLE citas (
   fecha_hora           TIMESTAMPTZ NOT NULL,
   duracion_min         SMALLINT NOT NULL DEFAULT 30 CHECK (duracion_min BETWEEN 10 AND 240),
   motivo               VARCHAR(200) NOT NULL,
+  tipo_consulta        VARCHAR(30)  NOT NULL DEFAULT 'consulta_general'
+                       CONSTRAINT citas_tipo_consulta_check CHECK (tipo_consulta IN
+                       ('consulta_general', 'vacunacion', 'control', 'desparasitacion',
+                        'cirugia', 'urgencia', 'otro')),
   estado               estado_cita NOT NULL DEFAULT 'programada',
   observaciones        TEXT,
   fecha_registro       TIMESTAMPTZ NOT NULL DEFAULT now(),
@@ -160,6 +166,15 @@ CREATE TABLE consultas (
   temperatura_c            NUMERIC(4,1) CHECK (temperatura_c BETWEEN 30 AND 45),
   frecuencia_cardiaca      SMALLINT CHECK (frecuencia_cardiaca > 0),
   frecuencia_respiratoria  SMALLINT CHECK (frecuencia_respiratoria > 0),
+  -- Examen clínico completo (formato de historia clínica)
+  pulso                    SMALLINT CHECK (pulso > 0),
+  tiempo_llenado_capilar   NUMERIC(3,1) CHECK (tiempo_llenado_capilar > 0),   -- segundos
+  ganglios_linfaticos      VARCHAR(300),
+  mucosas                  VARCHAR(200),
+  actitud                  VARCHAR(20) CHECK (actitud IN ('alerta','letargico','estuporoso','comatoso','otro')),
+  actitud_otro             VARCHAR(100),
+  -- Órganos y sistemas: {"ojos": "N", "oidos": "AN", ...}  N = normal, AN = anormal, NE = no examinado
+  organos_sistemas         JSONB,
   examen_fisico            TEXT,
   diagnostico              TEXT NOT NULL,
   observaciones            TEXT,
@@ -199,10 +214,35 @@ CREATE TABLE evoluciones_tratamiento (
 );
 CREATE INDEX idx_evoluciones_tratamiento ON evoluciones_tratamiento(id_tratamiento, fecha DESC);
 
+-- Ep4-Hu1: catálogo de vacunas disponibles en la clínica.
+-- especie NULL = la vacuna aplica a cualquier especie.
+-- dias_refuerzo = sugerencia para calcular la próxima dosis (el veterinario puede cambiarla).
+CREATE TABLE catalogo_vacunas (
+  id_catalogo          SERIAL PRIMARY KEY,
+  nombre               VARCHAR(100) NOT NULL UNIQUE,
+  especie              VARCHAR(40),
+  descripcion          VARCHAR(300),
+  dias_refuerzo        SMALLINT CHECK (dias_refuerzo > 0),
+  activo               BOOLEAN NOT NULL DEFAULT TRUE,
+  fecha_registro       TIMESTAMPTZ NOT NULL DEFAULT now(),
+  fecha_actualizacion  TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+INSERT INTO catalogo_vacunas (nombre, especie, descripcion, dias_refuerzo) VALUES
+  ('Rabia',                  NULL,     'Obligatoria en perros y gatos',                                365),
+  ('Pentavalente canina',    'canino', 'Moquillo, hepatitis, parvovirus, parainfluenza y leptospirosis', 365),
+  ('Parvovirus canino',      'canino', 'Refuerzo específico contra parvovirus',                      365),
+  ('Moquillo canino',        'canino', 'Refuerzo específico contra moquillo',                        365),
+  ('Leptospirosis',          'canino', 'Protección contra leptospira',                               365),
+  ('Tos de las perreras',    'canino', 'Bordetella bronchiseptica',                                  365),
+  ('Triple felina',          'felino', 'Rinotraqueítis, calicivirus y panleucopenia',                 365),
+  ('Leucemia felina',        'felino', 'Virus de la leucemia felina (FeLV)',                          365);
+
 CREATE TABLE vacunas (
   id_vacuna            SERIAL PRIMARY KEY,
   id_historia          INT NOT NULL REFERENCES historias_clinicas(id_historia) ON DELETE CASCADE,
   id_veterinario       INT REFERENCES veterinarios(id_veterinario) ON DELETE SET NULL,
+  id_catalogo          INT REFERENCES catalogo_vacunas(id_catalogo) ON DELETE SET NULL,
   nombre               VARCHAR(100) NOT NULL,
   laboratorio          VARCHAR(100),
   lote                 VARCHAR(50),
@@ -275,6 +315,25 @@ CREATE INDEX ix_auditoria_fecha    ON auditoria (fecha DESC);
 CREATE INDEX ix_auditoria_registro ON auditoria (tabla_afectada, id_registro);
 
 -- ---------------------------------------------------------------------
+--  Ep6-Hu1: interacciones con el asistente de IA
+--  Se guardan todas (también las fallidas): sirven de historial y para
+--  limitar cuántas consultas hace cada usuario en un periodo de tiempo.
+-- ---------------------------------------------------------------------
+CREATE TABLE interacciones_ia (
+  id_interaccion  BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  id_usuario      INT NOT NULL REFERENCES usuarios(id_usuario) ON DELETE CASCADE,
+  id_mascota      INT REFERENCES mascotas(id_mascota) ON DELETE SET NULL,
+  pregunta        TEXT NOT NULL,
+  respuesta       TEXT,
+  modelo          VARCHAR(80),
+  exitosa         BOOLEAN NOT NULL DEFAULT FALSE,
+  error           VARCHAR(300),
+  duracion_ms     INT,
+  fecha           TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX ix_interacciones_ia_usuario_fecha ON interacciones_ia (id_usuario, fecha DESC);
+
+-- ---------------------------------------------------------------------
 --  Trigger: fecha_actualizacion automática
 -- ---------------------------------------------------------------------
 CREATE FUNCTION fn_actualizar_fecha() RETURNS trigger AS $$
@@ -288,7 +347,8 @@ DO $$
 DECLARE t TEXT;
 BEGIN
   FOREACH t IN ARRAY ARRAY['usuarios','propietarios','veterinarios','mascotas','citas',
-                           'historias_clinicas','consultas','tratamientos','vacunas']
+                           'historias_clinicas','consultas','tratamientos','vacunas',
+                           'catalogo_vacunas']
   LOOP
     EXECUTE format('CREATE TRIGGER trg_%I_actualizacion BEFORE UPDATE ON %I
                     FOR EACH ROW EXECUTE FUNCTION fn_actualizar_fecha()', t, t);

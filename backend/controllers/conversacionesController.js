@@ -18,6 +18,30 @@ async function obtenerConversacionAutorizada(idConversacion, usuario) {
     return conversacion;
 }
 
+/**
+ * Ep8-Hu5: antes de guardar un mensaje se comprueba que la otra persona siga activa.
+ * Un propietario solo puede escribirle a veterinarios activos (y viceversa).
+ */
+async function verificarPuedeEscribir(conversacion, usuario) {
+    const { rows } = await query(
+        `SELECT uv.activo AS veterinario_activo, up.activo AS propietario_activo
+           FROM conversaciones c
+           JOIN veterinarios v ON v.id_veterinario = c.id_veterinario
+           JOIN usuarios uv    ON uv.id_usuario = v.id_usuario
+           JOIN propietarios p ON p.id_propietario = c.id_propietario
+           JOIN usuarios up    ON up.id_usuario = p.id_usuario
+          WHERE c.id_conversacion = $1`,
+        [conversacion.id_conversacion]
+    );
+    const estado = rows[0];
+    if (usuario.rol === 'propietario' && !estado?.veterinario_activo) {
+        throw sinPermiso('El veterinario ya no está activo; no puede enviarle mensajes');
+    }
+    if (usuario.rol === 'veterinario' && !estado?.propietario_activo) {
+        throw sinPermiso('El propietario ya no está activo; no puede enviarle mensajes');
+    }
+}
+
 /** Guarda un mensaje (remitente, contenido y fecha) y lo devuelve. Lo usa sockets/chat.js. */
 async function guardarMensaje(idConversacion, idRemitente, contenido) {
     const { rows } = await query(
@@ -105,6 +129,6 @@ async function listarMensajes(req, res) {
 }
 
 module.exports = {
-    obtenerConversacionAutorizada, guardarMensaje,
+    obtenerConversacionAutorizada, verificarPuedeEscribir, guardarMensaje,
     listarVeterinarios, listar, crear, listarMensajes,
 };
