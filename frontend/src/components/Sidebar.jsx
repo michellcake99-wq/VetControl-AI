@@ -1,5 +1,6 @@
 import { Link, NavLink } from 'react-router-dom';
-import { Sparkles, X } from 'lucide-react';
+import { X } from 'lucide-react';
+import emblema from '../assets/logo-emblema.png';
 import { navItems } from '../routes.js';
 import { usuario } from '../data/mockData.js';
 import { iniciales } from '../utils/format.js';
@@ -33,7 +34,7 @@ export default function Sidebar({ abierto, onCerrar }) {
       <div className="sidebar__marca">
         <Link to="/inicio" className="marca">
           <span className="marca__emblema" aria-hidden="true">
-            <Sparkles size={20} strokeWidth={2.2} />
+            <img src={emblema} alt="" width="38" height="38" />
           </span>
           <span className="marca__texto">
             <span className="marca__nombre">VetControl</span>
@@ -52,7 +53,7 @@ export default function Sidebar({ abierto, onCerrar }) {
 
       <nav className="nav">
         <ul>
-          {itemsVisibles.map(({ to, label, icon: Icon }) => (
+          {itemsVisibles.map(({ to, label, etiquetas, icon: Icon }) => (
             <li key={to}>
               <NavLink
                 to={to}
@@ -61,7 +62,7 @@ export default function Sidebar({ abierto, onCerrar }) {
                 }
               >
                 <Icon size={20} strokeWidth={1.8} aria-hidden="true" />
-                <span>{label}</span>
+                <span>{etiquetas?.[rol] ?? label}</span>
               </NavLink>
             </li>
           ))}

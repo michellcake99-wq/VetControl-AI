@@ -1,18 +1,22 @@
 import { useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Plus, Pencil, Ban, PawPrint } from 'lucide-react';
+import {
+  Ban,
+  ChevronRight,
+  PawPrint,
+  Pencil,
+  Plus,
+  Search,
+  User,
+  X,
+} from 'lucide-react';
 import { api } from '../services/api.js';
 import { rolActual } from '../utils/sesion.js';
-import { calcularEdad } from '../utils/mascotas.js';
+import { calcularEdad, ETIQUETA_SEXO } from '../utils/mascotas.js';
 import Alerta from '../components/Alerta.jsx';
 import CargandoInline from '../components/CargandoInline.jsx';
 import ModalConfirmar from '../components/ModalConfirmar.jsx';
-
-const ETIQUETA_SEXO = {
-  macho: 'Macho',
-  hembra: 'Hembra',
-  desconocido: 'Sexo no registrado',
-};
+import FotoMascota from '../components/FotoMascota.jsx';
 
 export default function Mascotas() {
   const rol = rolActual();
@@ -84,15 +88,17 @@ export default function Mascotas() {
     }
   }
 
+  const titulo = esPersonalClinica ? 'Pacientes' : 'Mis mascotas';
+
   return (
     <section>
       <div className="encabezado-pagina">
         <div>
-          <h1 className="saludo__titulo">Mis mascotas</h1>
+          <h1 className="saludo__titulo">{titulo}</h1>
           <p className="texto-sec">
             {esPersonalClinica
-              ? 'Mascotas registradas de todos los propietarios.'
-              : 'Tus compañeros peludos registrados en la plataforma.'}
+              ? 'Mascotas atendidas en la clínica. Toca una para ver su historia, vacunas y tratamientos.'
+              : 'Tus compañeros peludos. Toca uno para ver su historia, vacunas y tratamientos.'}
           </p>
         </div>
         <Link to="/mascotas/nueva" className="boton boton--oscuro">
@@ -101,14 +107,26 @@ export default function Mascotas() {
         </Link>
       </div>
 
-      <input
-        type="search"
-        className="campo-busqueda"
-        placeholder="Buscar por nombre o microchip…"
-        value={busqueda}
-        onChange={(e) => cambiarBusqueda(e.target.value)}
-        aria-label="Buscar mascota"
-      />
+      <div className="buscador">
+        <Search size={17} className="buscador__icono" aria-hidden="true" />
+        <input
+          type="search"
+          placeholder="Buscar por nombre o microchip…"
+          value={busqueda}
+          onChange={(e) => cambiarBusqueda(e.target.value)}
+          aria-label="Buscar mascota"
+        />
+        {busqueda && (
+          <button
+            type="button"
+            className="buscador__limpiar"
+            onClick={() => cambiarBusqueda('')}
+            aria-label="Limpiar búsqueda"
+          >
+            <X size={15} />
+          </button>
+        )}
+      </div>
 
       <Alerta tipo="exito">{mensajeExito}</Alerta>
       <Alerta tipo="error">{error}</Alerta>
@@ -120,42 +138,49 @@ export default function Mascotas() {
           <span className="icono-circulo icono-circulo--44" aria-hidden="true">
             <PawPrint size={22} strokeWidth={1.8} />
           </span>
-          <p className="texto-sec">Todavía no hay mascotas registradas.</p>
+          <p className="texto-sec">
+            {busqueda
+              ? `No encontramos mascotas con «${busqueda}».`
+              : 'Todavía no hay mascotas registradas.'}
+          </p>
         </div>
       ) : (
-        <div className="rejilla-tarjetas">
+        <div className="rejilla-pacientes">
           {mascotas.map((mascota) => (
             <article
               key={mascota.id_mascota}
-              className="tarjeta tarjeta-mascota"
+              className="tarjeta tarjeta-paciente"
             >
-              <div className="tarjeta-mascota__cabecera">
-                <span
-                  className="icono-circulo icono-circulo--44"
-                  aria-hidden="true"
+              <FotoMascota mascota={mascota} tamano={76} />
+              <h2 className="tarjeta-paciente__nombre">
+                {/* Toda la tarjeta abre la ficha de la mascota */}
+                <Link
+                  to={`/mascotas/${mascota.id_mascota}`}
+                  className="tarjeta-paciente__enlace"
                 >
-                  <PawPrint size={20} strokeWidth={1.8} />
-                </span>
-                <div>
-                  <p className="tarjeta-mascota__nombre">{mascota.nombre}</p>
-                  <p className="tarjeta-mascota__detalle">
-                    {mascota.especie} · {mascota.raza || 'Raza no registrada'}
-                  </p>
-                </div>
-              </div>
-
-              <p className="tarjeta-mascota__detalle">
-                {calcularEdad(mascota.fecha_nacimiento)} ·{' '}
-                {ETIQUETA_SEXO[mascota.sexo] ?? mascota.sexo}
+                  {mascota.nombre}
+                </Link>
+              </h2>
+              <p className="tarjeta-paciente__detalle">
+                {mascota.especie} · {mascota.raza || 'Raza no registrada'}
               </p>
-
+              <div className="ficha-mascota__chips">
+                {mascota.fecha_nacimiento && (
+                  <span>{calcularEdad(mascota.fecha_nacimiento)}</span>
+                )}
+                {ETIQUETA_SEXO[mascota.sexo] &&
+                  mascota.sexo !== 'desconocido' && (
+                    <span>{ETIQUETA_SEXO[mascota.sexo]}</span>
+                  )}
+              </div>
               {esPersonalClinica && mascota.nombre_propietario && (
-                <p className="tarjeta-mascota__detalle">
-                  Dueño/a: {mascota.nombre_propietario}
+                <p className="ficha-mascota__dueno">
+                  <User size={13} aria-hidden="true" />
+                  {mascota.nombre_propietario}
                 </p>
               )}
 
-              <div className="tarjeta-mascota__acciones">
+              <div className="tarjeta-paciente__acciones">
                 <Link
                   to={`/mascotas/${mascota.id_mascota}/editar`}
                   className="boton boton--claro boton--peq"
@@ -174,6 +199,9 @@ export default function Mascotas() {
                   </button>
                 )}
               </div>
+              <span className="tarjeta-paciente__ver" aria-hidden="true">
+                Ver ficha <ChevronRight size={14} />
+              </span>
             </article>
           ))}
         </div>

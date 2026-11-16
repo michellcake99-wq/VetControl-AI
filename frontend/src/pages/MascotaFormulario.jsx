@@ -4,6 +4,8 @@ import { api } from '../services/api.js';
 import { rolActual } from '../utils/sesion.js';
 import Alerta from '../components/Alerta.jsx';
 import CargandoInline from '../components/CargandoInline.jsx';
+import SelectorFoto from '../components/SelectorFoto.jsx';
+import BotonVolver from '../components/BotonVolver.jsx';
 
 const VALORES_INICIALES = {
   id_propietario: '',
@@ -17,6 +19,7 @@ const VALORES_INICIALES = {
   esterilizado: false,
   microchip: '',
   observaciones: '',
+  foto: '',
 };
 
 export default function MascotaFormulario() {
@@ -61,6 +64,7 @@ export default function MascotaFormulario() {
           esterilizado: Boolean(mascota.esterilizado),
           microchip: mascota.microchip ?? '',
           observaciones: mascota.observaciones ?? '',
+          foto: mascota.foto ?? '',
         })
       )
       .catch((err) =>
@@ -108,6 +112,8 @@ export default function MascotaFormulario() {
       esterilizado: valores.esterilizado,
       microchip: valores.microchip.trim() || undefined,
       observaciones: valores.observaciones.trim() || undefined,
+      // Al editar, sin foto = quitarla (null); al registrar, simplemente no se envía
+      foto: valores.foto || (editando ? null : undefined),
     };
     if (esPersonalClinica && !editando)
       cuerpo.id_propietario = Number(valores.id_propietario);
@@ -136,6 +142,7 @@ export default function MascotaFormulario() {
 
   return (
     <section>
+      <BotonVolver a="/mascotas" texto="Volver" />
       <h1 className="saludo__titulo">
         {editando ? 'Editar mascota' : 'Registrar mascota'}
       </h1>
@@ -166,6 +173,12 @@ export default function MascotaFormulario() {
             )}
           </div>
         )}
+
+        <SelectorFoto
+          foto={valores.foto}
+          nombre={valores.nombre || 'la mascota'}
+          onCambio={(foto) => actualizarCampo('foto', foto)}
+        />
 
         <div className={`campo${errores.nombre ? ' campo--error' : ''}`}>
           <label htmlFor="nombre">Nombre *</label>

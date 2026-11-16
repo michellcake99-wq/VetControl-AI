@@ -4,6 +4,7 @@ import { Trash2, Plus } from 'lucide-react';
 import { api } from '../services/api.js';
 import Alerta from '../components/Alerta.jsx';
 import CargandoInline from '../components/CargandoInline.jsx';
+import BotonVolver from '../components/BotonVolver.jsx';
 
 // 1 = lunes ... 7 = domingo (coincide con el CHECK de horarios_veterinario en schema.sql)
 const DIAS = {
@@ -175,6 +176,7 @@ export default function VeterinarioFormulario() {
 
   return (
     <section>
+      <BotonVolver a="/veterinarios" texto="Volver a veterinarios" />
       <h1 className="saludo__titulo">
         {editando ? 'Editar veterinario' : 'Registrar veterinario'}
       </h1>
