@@ -2,6 +2,7 @@ export default function ModalConfirmar({
   titulo,
   mensaje,
   confirmando,
+  textoConfirmar = 'Sí, desactivar',
   onConfirmar,
   onCancelar,
 }) {
@@ -33,7 +34,7 @@ export default function ModalConfirmar({
             onClick={onConfirmar}
             disabled={confirmando}
           >
-            {confirmando ? 'Procesando…' : 'Sí, desactivar'}
+            {confirmando ? 'Procesando…' : textoConfirmar}
           </button>
         </div>
       </div>
