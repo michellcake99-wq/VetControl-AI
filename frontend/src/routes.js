@@ -8,6 +8,7 @@ import {
   User,
   Users,
   Stethoscope,
+  ClipboardPlus,
 } from 'lucide-react';
 
 // Ep7-Hu1: cada opción del menú indica qué roles la ven
@@ -21,6 +22,8 @@ export const navItems = [
   {
     to: '/mascotas',
     label: 'Mis mascotas',
+    // Para el personal de la clínica las mascotas son sus pacientes
+    etiquetas: { veterinario: 'Pacientes', administrador: 'Pacientes' },
     icon: PawPrint,
     roles: TODOS_LOS_ROLES,
   },
@@ -30,6 +33,13 @@ export const navItems = [
     label: 'Propietarios',
     icon: Users,
     roles: PERSONAL_CLINICA,
+  },
+  // Ep3-Hu13: consultas (el veterinario registra; propietario y administrador consultan)
+  {
+    to: '/consultas',
+    label: 'Consultas',
+    icon: ClipboardPlus,
+    roles: TODOS_LOS_ROLES,
   },
   { to: '/citas', label: 'Citas', icon: Calendar, roles: TODOS_LOS_ROLES },
   { to: '/vacunas', label: 'Vacunas', icon: Syringe, roles: TODOS_LOS_ROLES },

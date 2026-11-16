@@ -7,7 +7,7 @@ BEGIN;
 
 TRUNCATE usuarios, propietarios, veterinarios, mascotas, citas, historias_clinicas,
          consultas, tratamientos, evoluciones_tratamiento, vacunas, recordatorios,
-         conversaciones, mensajes, horarios_veterinario, auditoria RESTART IDENTITY CASCADE;
+         conversaciones, mensajes, horarios_veterinario, interacciones_ia, auditoria RESTART IDENTITY CASCADE;
 
 -- Hash bcrypt de "Vet12345" (compatible con bcrypt.compare de routes/auth.js)
 INSERT INTO usuarios (id_rol, nombre, apellido, correo, contrasena_hash)
@@ -57,9 +57,9 @@ INSERT INTO mascotas (id_propietario, nombre, especie, raza, sexo, fecha_nacimie
 UPDATE historias_clinicas SET alergias = 'Penicilina', antecedentes = 'Displasia leve de cadera'
 WHERE id_mascota = 1;
 
-INSERT INTO citas (id_mascota, id_veterinario, fecha_hora, motivo, estado) VALUES
-  (1, 1, now() - interval '10 days', 'Control anual', 'atendida'),
-  (3, 1, now() + interval '3 days',  'Revisión de piel', 'programada');
+INSERT INTO citas (id_mascota, id_veterinario, fecha_hora, motivo, tipo_consulta, estado) VALUES
+  (1, 1, now() - interval '10 days', 'Control anual', 'control', 'atendida'),
+  (3, 1, now() + interval '3 days',  'Revisión de piel', 'consulta_general', 'programada');
 
 INSERT INTO consultas (id_historia, id_veterinario, id_cita, fecha, motivo, anamnesis, peso_kg,
                        temperatura_c, frecuencia_cardiaca, diagnostico, proximo_control) VALUES
@@ -73,10 +73,16 @@ INSERT INTO evoluciones_tratamiento (id_tratamiento, id_usuario, fecha, estado_g
 SELECT 1, id_usuario, now() - interval '5 days', 4, 'Camina mejor, ya no cojea al levantarse'
 FROM usuarios WHERE correo = 'ana@correo.com';
 
-INSERT INTO vacunas (id_historia, id_veterinario, nombre, laboratorio, lote, fecha_aplicacion, proxima_dosis) VALUES
-  (1, 1, 'Rabia',         'Zoetis', 'RB-2291', CURRENT_DATE - 300, CURRENT_DATE + 65),
-  (1, 1, 'Pentavalente',  'MSD',    'PV-1180', CURRENT_DATE - 300, CURRENT_DATE + 65),
-  (2, 1, 'Triple felina', 'Zoetis', 'TF-0042', CURRENT_DATE - 30,  CURRENT_DATE + 335);
+-- Ep4-Hu1: cada vacuna queda enlazada a su vacuna del catálogo
+INSERT INTO vacunas (id_historia, id_veterinario, id_catalogo, nombre, laboratorio, lote, fecha_aplicacion, proxima_dosis)
+SELECT v.id_historia, 1, c.id_catalogo, c.nombre, v.laboratorio, v.lote, v.aplicacion, v.proxima
+FROM (VALUES
+  (1, 1, 'Rabia',               'Zoetis', 'RB-2291', CURRENT_DATE - 300, CURRENT_DATE + 65),
+  (2, 1, 'Pentavalente canina', 'MSD',    'PV-1180', CURRENT_DATE - 300, CURRENT_DATE + 65),
+  (3, 2, 'Triple felina',       'Zoetis', 'TF-0042', CURRENT_DATE - 30,  CURRENT_DATE + 335)
+) AS v(orden, id_historia, nombre, laboratorio, lote, aplicacion, proxima)
+JOIN catalogo_vacunas c ON c.nombre = v.nombre
+ORDER BY v.orden;
 
 -- Los datos de prueba no cuentan como cambios de usuarios: se limpia la auditoría
 TRUNCATE auditoria RESTART IDENTITY;

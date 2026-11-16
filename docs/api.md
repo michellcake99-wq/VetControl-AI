@@ -1,4 +1,4 @@
-# VetControl AI — API de propietarios, mascotas, veterinarios e historias clínicas
+# VetControl AI — Documentación de la API
 
 Base: `http://localhost:3000/api`. Todas las rutas requieren el token del login existente:
 
@@ -91,17 +91,20 @@ POST /api/veterinarios/1/horarios
 | PUT | `/historias/:id` | veterinario — antecedentes, alergias, enfermedades_cronicas |
 | GET | `/historias/:id/consultas?desde=&hasta=&pagina=` | todos |
 | POST | `/historias/:id/consultas` | veterinario |
-| GET | `/consultas/:id` | todos |
+| GET | `/consultas?q=&id_mascota=&desde=&hasta=&pagina=&limite=` | todos — módulo Consultas (Ep3-Hu13); el propietario solo ve las de sus mascotas |
+| GET | `/consultas/:id` | todos — incluye mascota, propietario, tratamientos y `puede_editar` |
 | PUT | `/consultas/:id` | el veterinario que la registró |
 | POST | `/consultas/:id/tratamientos` | veterinario |
 | GET | `/historias/:id/tratamientos?estado=activo` | todos |
 | PUT | `/tratamientos/:id` | veterinario (p. ej. `{"estado": "finalizado"}`) |
 | GET | `/tratamientos/:id/evoluciones` | todos |
 | POST | `/tratamientos/:id/evoluciones` | propietario dueño de la mascota |
-| GET | `/historias/:id/vacunas` | todos |
-| POST | `/historias/:id/vacunas` | veterinario |
+| GET | `/historias/:id/vacunas` | todos (carné en orden cronológico) |
+| POST | `/historias/:id/vacunas` | veterinario (ver Ep4-Hu1) |
 
 "Todos" = cualquier usuario autenticado; el propietario solo accede a lo de sus mascotas.
+
+Examen clínico completo (migración `004`): `actitud` ∈ `alerta | letargico | estuporoso | comatoso | otro` (con `actitud_otro`). `organos_sistemas` admite las claves `estado_general, hidratacion, tegumentario, ojos, oidos, nariz, digestivo, respiratorio, nervioso, musculoesqueletico, cardiovascular, genitourinario`, cada una con `N` (normal), `AN` (anormal) o `NE` (no examinado).
 
 ```json
 POST /api/historias/3/consultas
@@ -109,20 +112,46 @@ POST /api/historias/3/consultas
   "id_cita": 2, "motivo": "Revisión de piel", "anamnesis": "Se rasca hace una semana",
   "peso_kg": 23.1, "temperatura_c": 38.9, "frecuencia_cardiaca": 100,
   "frecuencia_respiratoria": 24, "examen_fisico": "Eritema en abdomen",
-  "diagnostico": "Dermatitis alérgica", "proximo_control": "2026-12-01"
+  "diagnostico": "Dermatitis alérgica", "proximo_control": "2026-12-01",
+  "pulso": 98, "tiempo_llenado_capilar": 2, "ganglios_linfaticos": "Normales",
+  "mucosas": "Rosadas", "actitud": "alerta",
+  "organos_sistemas": { "estado_general": "N", "digestivo": "AN", "ojos": "NE" }
 }
 
 POST /api/consultas/1/tratamientos
 { "medicamento": "Meloxicam", "dosis": "0.1 mg/kg", "frecuencia": "cada 24 horas",
   "via": "oral", "fecha_inicio": "2026-11-10", "fecha_fin": "2026-11-20" }
 
-POST /api/historias/1/vacunas
-{ "nombre": "Rabia", "laboratorio": "Zoetis", "lote": "RB-2291",
-  "fecha_aplicacion": "2026-11-10", "proxima_dosis": "2027-11-10" }
-
 POST /api/tratamientos/1/evoluciones      (como propietario)
 { "estado_general": 4, "dosis_aplicada": true, "descripcion": "Ya no cojea" }
 ```
+
+## Vacunas (Ep4-Hu1)
+
+| Método | Ruta | Quién |
+|---|---|---|
+| GET | `/vacunas/catalogo?especie=felino` | todos — vacunas disponibles (las de esa especie + las que aplican a todas) |
+| GET | `/historias/:id/vacunas` | todos — carné en orden cronológico; el propietario solo el de sus mascotas |
+| POST | `/historias/:id/vacunas` | veterinario — registra una vacuna |
+| PUT | `/vacunas/:id` | veterinario — corrige un registro ingresado por error |
+
+```json
+POST /api/historias/2/vacunas
+{
+  "id_catalogo": 8, "laboratorio": "Zoetis", "lote": "FL-001",
+  "fecha_aplicacion": "2026-11-10", "proxima_dosis": "2027-11-10",
+  "observaciones": "Sin reacciones"
+}
+
+PUT /api/vacunas/4
+{ "lote": "FL-002", "proxima_dosis": "2027-12-01" }
+```
+
+- La vacuna se elige del catálogo con `id_catalogo` (el nombre se toma del catálogo). Para una vacuna que no esté en el catálogo se envía `nombre` sin `id_catalogo`.
+- La vacuna del catálogo debe servir para la especie de la mascota (si no, `400` en el campo `id_catalogo`).
+- `proxima_dosis` debe ser posterior a `fecha_aplicacion`, y la aplicación no puede ser futura (`400` en el campo correspondiente). Al corregir se valida con las fechas finales (las nuevas + las ya guardadas).
+- Cada vacuna del carné incluye `nombre_veterinario` y `dias_refuerzo` (sugerencia del catálogo para la próxima dosis).
+- **Bases que ya tienen datos (Supabase):** ejecutar `database/migraciones/001_ep4-hu1_catalogo_vacunas.sql`. No borra nada y se puede ejecutar más de una vez.
 
 ## Citas (Ep3-Hu10)
 
@@ -134,33 +163,38 @@ Todas las rutas exigen el token JWT. Las fechas se envían en formato ISO 8601 c
 | GET | `/citas?estado=&desde=&hasta=&id_mascota=&id_veterinario=&orden=asc|desc&pagina=&limite=` | todos — el propietario ve las suyas, el veterinario su agenda y el administrador todas |
 | GET | `/citas/:id` | el propietario de la mascota, el veterinario de la cita o el administrador |
 | PUT o PATCH | `/citas/:id/estado` | según el cambio (ver tabla de estados) |
+| GET | `/citas/veterinarios` | todos — veterinarios activos para elegir al pedir la cita (Ep3-Hu14) |
+| GET | `/citas/ocupados?id_veterinario=&fecha=AAAA-MM-DD` | todos — horarios ya tomados de ese veterinario ese día, sin datos de otras personas (Ep3-Hu14) |
 
 ```json
 POST /api/citas
 { "id_mascota": 1, "id_veterinario": 1, "fecha_hora": "2026-11-20T10:30:00-05:00",
-  "duracion_min": 30, "motivo": "Vacuna anual" }
+  "duracion_min": 30, "motivo": "Vacuna anual", "tipo_consulta": "vacunacion" }
 
 PUT /api/citas/5/estado
 { "estado": "atendida", "observaciones": "Sin novedades" }
 ```
 
-`duracion_min` es opcional (por defecto 30; entre 10 y 240). La cita nace con estado `programada` (la «solicitada» de los criterios de la historia).
+`duracion_min` es opcional (por defecto 30; entre 10 y 240). `tipo_consulta` es opcional (por defecto `consulta_general`; migración `006`): `consulta_general`, `vacunacion`, `control`, `desparasitacion`, `cirugia`, `urgencia` u `otro`.
+
+La cita que pide el propietario nace con estado `programada` (la «solicitada» de los criterios de la historia) y espera la confirmación del veterinario. La que agenda el veterinario (en su propia agenda) o el administrador nace ya `confirmada`.
 
 Reglas de la creación:
 
 - No se permiten fechas u horas pasadas (`400`).
-- Un veterinario no puede tener dos citas activas (`programada` o `reprogramada`) que se crucen en el tiempo: responde `409` con el mensaje «El veterinario ya tiene una cita en ese horario (ocupado de 10:00 a 10:30). Elija otra hora.». Una cita cancelada libera el horario.
+- Un veterinario no puede tener dos citas activas (`programada`, `confirmada` o `reprogramada`) que se crucen en el tiempo: responde `409` con el mensaje «El veterinario ya tiene una cita en ese horario (ocupado de 10:00 a 10:30). Elija otra hora.». Una cita cancelada libera el horario.
 - El propietario que agenda para la mascota de otra persona recibe `403`; mascota inexistente `404`; veterinario inexistente o desactivado `400`.
 
-Estados (los del tipo `estado_cita` de la base de datos: `programada`, `reprogramada`, `cancelada`, `atendida`, `no_asistio`). Equivalencias con los criterios: «solicitada» = `programada` y «completada» = `atendida`. No existe un estado «confirmada».
+Estados (los del tipo `estado_cita` de la base de datos: `programada`, `confirmada`, `reprogramada`, `cancelada`, `atendida`, `no_asistio`). Equivalencias con los criterios: «solicitada» = `programada` y «completada» = `atendida`. El estado `confirmada` se agregó en Ep3-Hu14 (migración `005`).
 
 Cambios de estado permitidos (cualquier otro responde `409`; si el estado es válido pero el rol no puede hacerlo, `403`):
 
 | Estado actual | Nuevo estado | Quién |
 |---|---|---|
-| `programada` o `reprogramada` | `atendida` | veterinario de la cita o administrador |
-| `programada` o `reprogramada` | `no_asistio` | veterinario de la cita o administrador |
-| `programada` o `reprogramada` | `cancelada` | propietario de la mascota, veterinario de la cita o administrador |
+| `programada` o `reprogramada` | `confirmada` | veterinario de la cita o administrador |
+| `programada`, `confirmada` o `reprogramada` | `atendida` | veterinario de la cita o administrador |
+| `programada`, `confirmada` o `reprogramada` | `no_asistio` | veterinario de la cita o administrador |
+| `programada`, `confirmada` o `reprogramada` | `cancelada` | propietario de la mascota, veterinario de la cita o administrador |
 
 `atendida`, `cancelada` y `no_asistio` son estados finales. Al registrar una consulta asociada a una cita (`POST /historias/:id/consultas` con `id_cita`), la cita pasa automáticamente a `atendida`.
 
@@ -177,6 +211,33 @@ Las consultas se listan de la más reciente a la más antigua e incluyen `nombre
 
 La colección de Postman para probar estas rutas está en `docs/VetControl-AI.postman_collection.json`.
 
+## Asistente de IA (Ep6-Hu1)
+
+| Método | Ruta | Quién |
+|---|---|---|
+| POST | `/ia/consultar` | todos (con token). Con `id_mascota`, el propietario solo puede preguntar por las suyas |
+
+```json
+POST /api/ia/consultar
+{ "pregunta": "¿Cada cuánto debo desparasitar a mi perro?", "id_mascota": 1 }
+
+200 OK
+{
+  "id_interaccion": 12,
+  "respuesta": "En general se recomienda…",
+  "modelo": "openai/gpt-oss-120b",
+  "fecha": "2026-11-14T20:15:03.120Z",
+  "consultas_restantes": 19
+}
+```
+
+- `id_mascota` es opcional. Si se envía, la IA recibe como contexto **solo** los datos de esa mascota (antecedentes, últimas consultas, tratamientos activos y vacunas).
+- Cada consulta, exitosa o fallida, se guarda en la tabla `interacciones_ia` (usuario, mascota, pregunta, respuesta, modelo, fecha y error si lo hubo).
+- **Límite por usuario:** `IA_LIMITE_CONSULTAS` consultas cada `IA_VENTANA_MINUTOS` minutos (por defecto 20 cada 60). Al pasarlo responde `429` indicando cuánto falta para volver a consultar.
+- **Errores del servicio** (el servidor nunca se detiene): `502` si el proveedor falla o no responde bien, `503` si está saturado o falta configurar la clave, `504` si tarda más de `IA_TIEMPO_MAXIMO_MS`.
+- **Configuración:** la clave va en `IA_API_KEY` del `.env` (ver `backend/.env.example`), nunca en el código. Por defecto usa Groq, que es gratuito y sin tarjeta; cualquier proveedor compatible con OpenAI sirve cambiando `IA_URL_BASE` e `IA_MODELO`.
+- **Bases que ya tienen datos (Supabase):** ejecutar `database/migraciones/002_ep6-hu1_interacciones_ia.sql`.
+
 ## Errores
 
 Todas las respuestas de error usan `{"mensaje": "..."}`, igual que el login existente.
@@ -188,3 +249,22 @@ Todas las respuestas de error usan `{"mensaje": "..."}`, igual que el login exis
 | 403 | El rol no tiene permiso o el recurso no es del propietario |
 | 404 | No existe |
 | 409 | Dato único repetido (correo, documento, microchip) o conflicto de estado |
+
+## Chat (Ep8-Hu1 y Ep8-Hu5)
+
+| Método | Ruta | Quién |
+|---|---|---|
+| GET | `/conversaciones/veterinarios` | propietario — veterinarios activos a los que puede escribir |
+| GET | `/conversaciones` | propietario o veterinario — sus conversaciones |
+| POST | `/conversaciones` | propietario — `{ "id_veterinario": 1, "id_mascota": 1 }` (mascota opcional) |
+| GET | `/conversaciones/:id/mensajes` | solo los dos participantes |
+
+Los mensajes se envían por Socket.IO: `io({ auth: { token } })` y el evento `enviar_mensaje` `{ id_conversacion, contenido }`, que responde `{ mensaje }` o `{ error, estado }`.
+
+Restricciones según el rol (Ep8-Hu5):
+
+- El chat es solo entre un propietario y un veterinario: el administrador recibe `403` en todas las rutas y no puede conectarse al socket; un veterinario no puede iniciar conversaciones ni escribirle a otro veterinario.
+- Un propietario solo puede escribirle a veterinarios activos (y un veterinario solo a propietarios activos).
+- Solo los participantes de una conversación pueden leer y enviar mensajes en ella.
+- Los intentos no permitidos se rechazan con `403` (`estado: 403` en el socket) y el mensaje **no** se guarda.
+- El servidor de Socket.IO vuelve a validar el usuario (cuenta activa) y su rol en cada evento, no solo al conectarse.
