@@ -39,6 +39,7 @@ const propietarioActualizar = z.object({
 
 // ----------------------------- Mascotas -----------------------------
 const sexo = z.enum(['macho', 'hembra', 'desconocido']);
+const FOTO_MAX = 480000; // caracteres del data URL (≈ 350 KB de imagen)
 const camposMascota = {
     id_propietario: z.number().int().positive(),
     nombre: texto(60),
@@ -49,6 +50,11 @@ const camposMascota = {
     peso_kg: z.number().positive('Debe ser mayor a 0').max(2000).nullish(),
     microchip: textoOpc(30),
     observaciones: textoOpc(2000),
+    // Foto como data URL (el navegador la reduce antes de enviarla); null la quita
+    foto: z.string()
+        .max(FOTO_MAX, 'La foto es demasiado pesada (máximo 350 KB después de reducirla)')
+        .regex(/^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/, 'La foto debe ser una imagen JPG, PNG o WebP')
+        .nullish(),
 };
 const mascotaCrear = z.object({
     ...camposMascota,
@@ -65,6 +71,12 @@ const historiaActualizar = z.object({
     enfermedades_cronicas: textoOpc(2000),
 }).refine(noVacio, alMenosUno);
 
+// Ep3-Hu13: actitud y temperamento, y los 12 órganos y sistemas del formato de historia clínica
+const ACTITUDES = ['alerta', 'letargico', 'estuporoso', 'comatoso', 'otro'];
+const ORGANOS_SISTEMAS = [
+    'estado_general', 'hidratacion', 'tegumentario', 'ojos', 'oidos', 'nariz',
+    'digestivo', 'respiratorio', 'nervioso', 'musculoesqueletico', 'cardiovascular', 'genitourinario',
+];
 const camposConsulta = {
     id_cita: z.number().int().positive().nullish(),
     fecha: z.iso.datetime({ offset: true, message: 'Fecha y hora inválida (ISO 8601)' }).optional(),
@@ -75,6 +87,16 @@ const camposConsulta = {
     frecuencia_cardiaca: z.number().int().positive().max(400).nullish(),
     frecuencia_respiratoria: z.number().int().positive().max(200).nullish(),
     examen_fisico: textoOpc(5000),
+    // Ep3-Hu13: examen clínico completo (formato de historia clínica)
+    pulso: z.number().int().positive().max(400).nullish(),
+    tiempo_llenado_capilar: z.number().positive().max(10, 'Máximo 10 segundos').nullish(),
+    ganglios_linfaticos: textoOpc(300),
+    mucosas: textoOpc(200),
+    actitud: z.enum(ACTITUDES, { message: `Actitud inválida (use ${ACTITUDES.join(', ')})` }).nullish(),
+    actitud_otro: textoOpc(100),
+    organos_sistemas: z.object(
+        Object.fromEntries(ORGANOS_SISTEMAS.map((o) => [o, z.enum(['N', 'AN', 'NE'], { message: 'Use N, AN o NE' }).optional()]))
+    ).strict('Órgano o sistema desconocido').nullish(),
     diagnostico: texto(5000),
     observaciones: textoOpc(5000),
     proximo_control: fecha.nullish(),
@@ -97,16 +119,27 @@ const tratamientoCrear = z.object(camposTratamiento).refine(fechasCoherentes, er
 const tratamientoActualizar = z.object({ ...camposTratamiento, estado: z.enum(['activo', 'finalizado', 'suspendido']) })
     .partial().refine(noVacio, alMenosUno).refine(fechasCoherentes, errorFechas);
 
-const vacunaCrear = z.object({
+// Ep4-Hu1: la vacuna se elige del catálogo (id_catalogo); `nombre` queda para vacunas
+// que no están en el catálogo. La próxima dosis debe ser posterior a la aplicación.
+const camposVacuna = {
+    id_catalogo: z.number().int().positive().nullish(),
     nombre: texto(100),
     laboratorio: textoOpc(100),
     lote: textoOpc(50),
-    fecha_aplicacion: fecha,
+    fecha_aplicacion: fecha.refine((d) => new Date(d) <= new Date(), 'La fecha de aplicación no puede ser futura'),
     proxima_dosis: fecha.nullish(),
     observaciones: textoOpc(1000),
-}).refine((d) => !d.proxima_dosis || d.proxima_dosis > d.fecha_aplicacion, {
-    message: 'proxima_dosis debe ser posterior a fecha_aplicacion', path: ['proxima_dosis'],
-});
+};
+const proximaDespuesDeAplicacion = (d) => !d.proxima_dosis || !d.fecha_aplicacion || d.proxima_dosis > d.fecha_aplicacion;
+const errorProximaDosis = {
+    message: 'La próxima dosis debe ser posterior a la fecha de aplicación', path: ['proxima_dosis'],
+};
+const vacunaCrear = z.object({ ...camposVacuna, nombre: camposVacuna.nombre.optional() })
+    .refine((d) => d.id_catalogo || d.nombre, { message: 'Elige una vacuna del catálogo', path: ['id_catalogo'] })
+    .refine(proximaDespuesDeAplicacion, errorProximaDosis);
+const vacunaActualizar = z.object(camposVacuna).partial()
+    .refine(noVacio, alMenosUno)
+    .refine(proximaDespuesDeAplicacion, errorProximaDosis);
 
 const evolucionCrear = z.object({
     estado_general: z.number().int().min(1, 'Entre 1 y 5').max(5, 'Entre 1 y 5'),
@@ -165,12 +198,20 @@ const horarioActualizar = z.object({
     hora_fin: hora,
 }).partial().refine(noVacio, alMenosUno).refine(finDespuesDeInicio, mensajeRango);
 
+// ------------------------------- IA (Ep6-Hu1) ------------------------
+const iaConsultar = z.object({
+    pregunta: z.string().trim().min(3, 'Escribe una pregunta de al menos 3 caracteres')
+        .max(2000, 'Máximo 2000 caracteres'),
+    id_mascota: z.number().int().positive().nullish(),
+});
+
 module.exports = {
     parametroId,
     propietarioCrear, propietarioActualizar,
     mascotaCrear, mascotaActualizar,
     historiaActualizar, consultaCrear, consultaActualizar,
-    tratamientoCrear, tratamientoActualizar, vacunaCrear, evolucionCrear,
+    tratamientoCrear, tratamientoActualizar, vacunaCrear, vacunaActualizar, evolucionCrear,
     conversacionCrear, mensajeEnviar,
     veterinarioCrear, veterinarioActualizar, horarioCrear, horarioActualizar,
+    iaConsultar, ORGANOS_SISTEMAS, ACTITUDES,
 };
