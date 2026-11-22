@@ -192,11 +192,11 @@ Cambios de estado permitidos (cualquier otro responde `409`; si el estado es vá
 | Estado actual | Nuevo estado | Quién |
 |---|---|---|
 | `programada` o `reprogramada` | `confirmada` | veterinario de la cita o administrador |
-| `programada`, `confirmada` o `reprogramada` | `atendida` | veterinario de la cita o administrador |
-| `programada`, `confirmada` o `reprogramada` | `no_asistio` | veterinario de la cita o administrador |
+| `confirmada` | `atendida` (completada) | veterinario de la cita o administrador |
+| `confirmada` | `no_asistio` | veterinario de la cita o administrador |
 | `programada`, `confirmada` o `reprogramada` | `cancelada` | propietario de la mascota, veterinario de la cita o administrador |
 
-`atendida`, `cancelada` y `no_asistio` son estados finales. Al registrar una consulta asociada a una cita (`POST /historias/:id/consultas` con `id_cita`), la cita pasa automáticamente a `atendida`.
+Una cita solicitada (`programada`) no puede pasar directo a `atendida`: primero se confirma (Ep5-Hu6). `atendida`, `cancelada` y `no_asistio` son estados finales. Cada cambio genera un aviso en la campana (y por correo): si lo hace el personal, le llega al propietario («Cita confirmada», «Cita cancelada», «Cita completada»); si el propietario cancela, le llega al veterinario. En la interfaz, al completar una cita el veterinario puede registrar de una vez su consulta (`/consultas/nueva?mascota=ID&cita=ID`). Al registrar una consulta asociada a una cita (`POST /historias/:id/consultas` con `id_cita`), la cita pasa automáticamente a `atendida`.
 
 ## Consultas y tratamientos por mascota (Ep3-Hu9)
 

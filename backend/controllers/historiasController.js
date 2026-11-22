@@ -1,7 +1,7 @@
 const { query, enTransaccion, construirInsert, construirUpdate } = require('../utils/baseDatos');
 const { ErrorHttp, noEncontrado, sinPermiso } = require('../utils/errores');
 const { paginar, respuestaPaginada } = require('../utils/paginacion');
-const { sinRomper, sincronizarVacunasRelacionadas, cancelarRecordatoriosTratamiento } = require('../utils/notificaciones');
+const { sinRomper, sincronizarVacunasRelacionadas, cancelarRecordatoriosTratamiento, sincronizarRecordatorioCita, avisarCambioEstadoCita } = require('../utils/notificaciones');
 const { esPersonal, obtenerMascotaAutorizada, obtenerHistoriaAutorizada } = require('../utils/acceso');
 
 const NOMBRE_VETERINARIO = `(SELECT u.nombre || ' ' || u.apellido FROM veterinarios v
@@ -121,6 +121,7 @@ async function crearConsulta(req, res) {
     exigirPerfilVeterinario(req.usuario);
     const historia = await obtenerHistoriaAutorizada(Number(req.params.id), req.usuario);
 
+    let citaCompletada = null;
     const consulta = await enTransaccion(async (cliente) => {
         const datos = { ...req.body, id_historia: historia.id_historia, id_veterinario: req.usuario.id_veterinario };
 
@@ -130,6 +131,7 @@ async function crearConsulta(req, res) {
             if (cita.rows[0].id_mascota !== historia.id_mascota) throw new ErrorHttp(400, 'La cita no corresponde a esta mascota');
             if (cita.rows[0].estado === 'cancelada') throw new ErrorHttp(400, 'No se puede registrar una consulta sobre una cita cancelada');
             await cliente.query(`UPDATE citas SET estado = 'atendida' WHERE id_cita = $1`, [datos.id_cita]);
+            if (cita.rows[0].estado !== 'atendida') citaCompletada = datos.id_cita;
         }
 
         const { text, values } = construirInsert('consultas', datos);
@@ -140,6 +142,11 @@ async function crearConsulta(req, res) {
         }
         return rows[0];
     });
+    // Ep5-Hu6: si la consulta dejó la cita completada, se avisa al propietario y se retira su recordatorio
+    if (citaCompletada) {
+        await sinRomper(() => sincronizarRecordatorioCita(citaCompletada));
+        await sinRomper(() => avisarCambioEstadoCita(citaCompletada, req.usuario.rol));
+    }
     res.status(201).json(consulta);
 }
 

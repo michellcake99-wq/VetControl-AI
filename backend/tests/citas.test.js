@@ -166,23 +166,29 @@ describe('Consultar una cita', () => {
 describe('Cambiar el estado de una cita', () => {
   const nueva = async (dias, hora) =>
     (await ana.post('/api/citas', { id_mascota: 1, id_veterinario: 1, fecha_hora: futuro(dias, hora), motivo: 'Control' })).body.id_cita;
+  // Ep5-Hu6: una cita solicitada primero se confirma; solo la confirmada se completa
+  const confirmada = async (dias, hora) => {
+    const id = await nueva(dias, hora);
+    await vet.put(`/api/citas/${id}/estado`, { estado: 'confirmada' });
+    return id;
+  };
 
   test('el veterinario marca la cita como atendida', async () => {
-    const id = await nueva(20, 14);
+    const id = await confirmada(20, 14);
     const r = await vet.put(`/api/citas/${id}/estado`, { estado: 'atendida', observaciones: 'Sin novedades' });
     expect(r.status).toBe(200);
     expect(r.body).toMatchObject({ estado: 'atendida', observaciones: 'Sin novedades' });
   });
 
   test('también acepta PATCH', async () => {
-    const id = await nueva(26, 14);
+    const id = await confirmada(26, 14);
     const token = await iniciarSesion('vet@vetcontrol.com');
     const r = await request(app).patch(`/api/citas/${id}/estado`).set('Authorization', `Bearer ${token}`).send({ estado: 'no_asistio' });
     expect(r.body.estado).toBe('no_asistio');
   });
 
   test('el propietario no puede marcarla como atendida; solo cancelar sus citas', async () => {
-    const id = await nueva(21, 14);
+    const id = await confirmada(21, 14);
     expect((await ana.put(`/api/citas/${id}/estado`, { estado: 'atendida' })).status).toBe(403);
     expect((await carlos.put(`/api/citas/${id}/estado`, { estado: 'cancelada' })).status).toBe(403); // no es suya
     const r = await ana.put(`/api/citas/${id}/estado`, { estado: 'cancelada', observaciones: 'Viaje' });
@@ -195,7 +201,7 @@ describe('Cambiar el estado de una cita', () => {
   });
 
   test('el administrador puede cambiar cualquier cita', async () => {
-    const id = await nueva(23, 14);
+    const id = await confirmada(23, 14);
     expect((await admin.put(`/api/citas/${id}/estado`, { estado: 'no_asistio' })).body.estado).toBe('no_asistio');
   });
 

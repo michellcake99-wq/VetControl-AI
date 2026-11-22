@@ -220,6 +220,32 @@ async function avisarCitaSolicitada(idCita) {
     });
 }
 
+
+const TEXTO_ESTADO = {
+    confirmada: ['Cita confirmada', 'fue confirmada'],
+    cancelada: ['Cita cancelada', 'fue cancelada'],
+    atendida: ['Cita completada', 'se completó'],
+    no_asistio: ['Cita sin asistencia', 'quedó registrada como «no asistió»'],
+};
+
+/**
+ * Ep5-Hu6: avisa del cambio de estado de una cita. Si lo hizo el personal de la clínica se avisa al propietario;
+ * si el propietario cancela su propia cita, se avisa al veterinario.
+ */
+async function avisarCambioEstadoCita(idCita, rolQuienCambia) {
+    const cita = await datosCita(idCita);
+    const texto = TEXTO_ESTADO[cita?.estado];
+    if (!texto) return;
+    const aPropietario = rolQuienCambia !== 'propietario';
+    await crearAviso(aPropietario ? cita.usuario_propietario : cita.usuario_veterinario, {
+        titulo: texto[0],
+        mensaje: `La cita de ${cita.mascota} del ${formatoFecha(cita.fecha_hora)} ${texto[1]}.`,
+        enlace: '/citas',
+        idMascota: cita.id_mascota,
+        idReferencia: idCita,
+    });
+}
+
 /**
  * Envía los pendientes que ya llegaron a su hora. Cada recordatorio se «reclama» con un UPDATE
  * antes de enviarlo, así que aunque corran dos procesos nunca sale el mismo correo dos veces.
@@ -252,4 +278,4 @@ async function procesarPendientes() {
 }
 
 module.exports = { crearAviso, sincronizarRecordatorioCita, sincronizarVacunasRelacionadas,
-    generarRecordatoriosTratamientos, cancelarRecordatoriosTratamiento, avisarCitaSolicitada, procesarPendientes, sinRomper, formatoFecha };
+    generarRecordatoriosTratamientos, cancelarRecordatoriosTratamiento, avisarCitaSolicitada, avisarCambioEstadoCita, procesarPendientes, sinRomper, formatoFecha };
