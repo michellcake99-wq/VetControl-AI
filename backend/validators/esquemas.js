@@ -205,6 +205,26 @@ const iaConsultar = z.object({
     id_mascota: z.number().int().positive().nullish(),
 });
 
+// ------------------------- Mi perfil (Ep4-Hu4) -------------------------
+// Si llega el correo o el rol se rechaza con un mensaje claro (no se pueden cambiar desde el perfil)
+const sinCorreoNiRol = (d) => !('correo' in d) && !('rol' in d) && !('id_rol' in d);
+const errorCorreoRol = { message: 'El correo y el rol no se pueden modificar', path: ['correo'] };
+const perfilBase = { nombre: texto(80), apellido: texto(80) };
+const armarPerfil = (campos) =>
+    z.looseObject(campos).partial().refine(noVacio, alMenosUno).refine(sinCorreoNiRol, errorCorreoRol)
+        .transform((d) => Object.fromEntries(Object.entries(d).filter(([k]) => k in campos)));
+const perfilActualizar = {
+    propietario: armarPerfil({ ...perfilBase, telefono, direccion: textoOpc(150), tipo_documento: tipoDocumento, numero_documento: numeroDocumento }),
+    veterinario: armarPerfil({ ...perfilBase, telefono, especialidad: texto(80), tarjeta_profesional: texto(30) }),
+    administrador: armarPerfil(perfilBase),
+};
+const perfilContrasena = z.object({
+    contrasena_actual: z.string().min(1, 'Escribe tu contraseña actual'),
+    contrasena_nueva: z.string().min(8, 'La contraseña debe tener mínimo 8 caracteres').max(72, 'Máximo 72 caracteres'),
+    confirmacion: z.string(),
+}).refine((d) => d.contrasena_nueva === d.confirmacion, { message: 'Las contraseñas no coinciden', path: ['confirmacion'] })
+  .refine((d) => d.contrasena_nueva !== d.contrasena_actual, { message: 'La contraseña nueva debe ser distinta de la actual', path: ['contrasena_nueva'] });
+
 // ------------------- Recuperación de contraseña (Ep7-Hu4) -------------------
 const olvideContrasena = z.object({ correo: z.email('Escribe un correo válido') });
 const tokenRecuperacion = z.string().trim().regex(/^[a-f0-9]{64}$/, 'El enlace no es válido');
@@ -225,6 +245,7 @@ module.exports = {
     tratamientoCrear, tratamientoActualizar, vacunaCrear, vacunaActualizar, evolucionCrear,
     conversacionCrear, mensajeEnviar,
     veterinarioCrear, veterinarioActualizar, horarioCrear, horarioActualizar,
+    perfilActualizar, perfilContrasena,
     olvideContrasena, verificarTokenRecuperacion, restablecerContrasena,
     iaConsultar, iaResumir, ORGANOS_SISTEMAS, ACTITUDES,
 };

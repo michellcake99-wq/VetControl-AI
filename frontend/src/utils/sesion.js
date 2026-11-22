@@ -44,6 +44,13 @@ export function guardarSesion({ token, usuario }) {
   }
 }
 
+/** Actualiza el nombre y apellido guardados en la sesión (para que la barra y el menú lo muestren al instante). */
+export function actualizarUsuarioSesion(cambios) {
+  const sesion = obtenerSesion();
+  if (sesion)
+    guardarSesion({ ...sesion, usuario: { ...sesion.usuario, ...cambios } });
+}
+
 export function cerrarSesion() {
   respaldo = null;
   vencio = false;

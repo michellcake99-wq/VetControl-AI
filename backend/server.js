@@ -7,6 +7,7 @@ const protectedRoutes = require('./routes/protected');
 const propietariosRoutes = require('./routes/propietarios');
 const mascotasRoutes = require('./routes/mascotas');
 const veterinariosRoutes = require('./routes/veterinarios');
+const perfilRoutes = require('./routes/perfil');
 const iaRoutes = require('./routes/ia');
 const manejoErrores = require('./middleware/manejoErrores');
 const { historias, consultas, tratamientos, vacunas } = require('./routes/historias');
@@ -25,6 +26,9 @@ app.use(express.json({ limit: '1mb' }));
 
 // Rutas de autenticación
 app.use('/api/auth', authRoutes);
+
+// Ep4-Hu4: Mi perfil (va antes de las rutas protegidas de prueba)
+app.use('/api/perfil', perfilRoutes);
 
 // Rutas protegidas
 app.use('/api', protectedRoutes);
