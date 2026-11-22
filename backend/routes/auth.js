@@ -3,6 +3,9 @@ const bcrypt = require('bcrypt');
 const pool = require('../db');
 const jwt = require('jsonwebtoken');
 require('dotenv').config();
+const validar = require('../middleware/validar');
+const esquemas = require('../validators/esquemas');
+const recuperacion = require('../controllers/recuperacionController');
 
 const router = express.Router();
 
@@ -197,5 +200,10 @@ router.post('/login', async (req, res) => {
         });
     }
 });
+
+// Ep7-Hu4: recuperación de contraseña
+router.post('/olvide-contrasena', validar(esquemas.olvideContrasena), recuperacion.solicitar);
+router.post('/verificar-token-recuperacion', validar(esquemas.verificarTokenRecuperacion), recuperacion.verificar);
+router.post('/restablecer-contrasena', validar(esquemas.restablecerContrasena), recuperacion.restablecer);
 
 module.exports = router;

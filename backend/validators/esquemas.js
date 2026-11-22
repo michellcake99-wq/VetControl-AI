@@ -205,6 +205,16 @@ const iaConsultar = z.object({
     id_mascota: z.number().int().positive().nullish(),
 });
 
+// ------------------- Recuperación de contraseña (Ep7-Hu4) -------------------
+const olvideContrasena = z.object({ correo: z.email('Escribe un correo válido') });
+const tokenRecuperacion = z.string().trim().regex(/^[a-f0-9]{64}$/, 'El enlace no es válido');
+const verificarTokenRecuperacion = z.object({ token: tokenRecuperacion });
+const restablecerContrasena = z.object({
+    token: tokenRecuperacion,
+    contrasena: z.string().min(8, 'La contraseña debe tener mínimo 8 caracteres').max(72, 'Máximo 72 caracteres'),
+    confirmacion: z.string(),
+}).refine((d) => d.contrasena === d.confirmacion, { message: 'Las contraseñas no coinciden', path: ['confirmacion'] });
+
 const iaResumir = z.object({ id_mascota: z.number({ message: 'Es obligatorio' }).int().positive() });
 
 module.exports = {
@@ -215,5 +225,6 @@ module.exports = {
     tratamientoCrear, tratamientoActualizar, vacunaCrear, vacunaActualizar, evolucionCrear,
     conversacionCrear, mensajeEnviar,
     veterinarioCrear, veterinarioActualizar, horarioCrear, horarioActualizar,
+    olvideContrasena, verificarTokenRecuperacion, restablecerContrasena,
     iaConsultar, iaResumir, ORGANOS_SISTEMAS, ACTITUDES,
 };

@@ -15,7 +15,7 @@
 
 BEGIN;
 
-DROP TABLE IF EXISTS intentos_login, interacciones_ia, auditoria, horarios_veterinario, mensajes, conversaciones, recordatorios,
+DROP TABLE IF EXISTS tokens_recuperacion, intentos_login, interacciones_ia, auditoria, horarios_veterinario, mensajes, conversaciones, recordatorios,
   evoluciones_tratamiento, tratamientos, vacunas, catalogo_vacunas, consultas, historias_clinicas, citas, mascotas,
   veterinarios, propietarios, usuarios, roles CASCADE;
 DROP TYPE IF EXISTS sexo_mascota, estado_cita, estado_tratamiento,
@@ -256,6 +256,17 @@ CREATE TABLE vacunas (
 );
 CREATE INDEX idx_vacunas_historia      ON vacunas(id_historia);
 CREATE INDEX idx_vacunas_proxima_dosis ON vacunas(proxima_dosis);
+
+-- Ep7-Hu4: recuperación de contraseña. Solo se guarda el hash (SHA-256) del token de un solo uso (vale 1 hora)
+CREATE TABLE tokens_recuperacion (
+  id_token          SERIAL PRIMARY KEY,
+  id_usuario        INT NOT NULL REFERENCES usuarios(id_usuario) ON DELETE CASCADE,
+  token_hash        CHAR(64) NOT NULL UNIQUE,
+  fecha_creacion    TIMESTAMPTZ NOT NULL DEFAULT now(),
+  fecha_expiracion  TIMESTAMPTZ NOT NULL,
+  usado             BOOLEAN NOT NULL DEFAULT FALSE
+);
+CREATE INDEX idx_tokens_recuperacion_usuario ON tokens_recuperacion(id_usuario, fecha_creacion DESC);
 
 -- Ep7-Hu3: intentos fallidos de inicio de sesión (5 en 15 minutos bloquean el acceso por 15 minutos)
 CREATE TABLE intentos_login (
