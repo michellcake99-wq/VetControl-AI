@@ -1,7 +1,7 @@
 const { query, enTransaccion, construirInsert, construirUpdate } = require('../utils/baseDatos');
 const { ErrorHttp, noEncontrado, sinPermiso } = require('../utils/errores');
 const { paginar, respuestaPaginada } = require('../utils/paginacion');
-const { sinRomper, sincronizarVacunasRelacionadas } = require('../utils/notificaciones');
+const { sinRomper, sincronizarVacunasRelacionadas, cancelarRecordatoriosTratamiento } = require('../utils/notificaciones');
 const { esPersonal, obtenerMascotaAutorizada, obtenerHistoriaAutorizada } = require('../utils/acceso');
 
 const NOMBRE_VETERINARIO = `(SELECT u.nombre || ' ' || u.apellido FROM veterinarios v
@@ -286,6 +286,8 @@ async function actualizarTratamiento(req, res) {
     }
     const { text, values } = construirUpdate('tratamientos', 'id_tratamiento', t.id_tratamiento, req.body);
     const { rows } = await query(text, values);
+    // Ep5-Hu3: un tratamiento finalizado o suspendido deja de generar recordatorios
+    if (rows[0].estado !== 'activo') await sinRomper(() => cancelarRecordatoriosTratamiento(t.id_tratamiento));
     res.json(rows[0]);
 }
 
