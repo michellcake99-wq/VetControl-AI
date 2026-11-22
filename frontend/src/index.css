@@ -3857,3 +3857,95 @@ a.registro:hover {
     animation: none;
   }
 }
+
+/* ---------- Ep5-Hu1: notificaciones ---------- */
+.topbar__contador {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 4px;
+  border-radius: 9px;
+  background: var(--c-chevron);
+  color: var(--c-blanco);
+  font-size: 11px;
+  font-weight: 700;
+  display: grid;
+  place-items: center;
+  border: 2px solid var(--c-blanco);
+}
+.notificaciones__filtro {
+  margin: 18px 0 16px;
+}
+.notificaciones {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 10px;
+}
+.notificacion {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 14px 16px;
+  background: var(--c-blanco);
+  border: 1px solid var(--c-borde);
+  border-radius: 14px;
+}
+.notificacion--nueva {
+  background: var(--c-panel);
+  border-color: var(--c-chevron);
+}
+.notificacion__icono {
+  flex: none;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: var(--c-icono-bg);
+  color: var(--c-primario);
+}
+.notificacion__texto {
+  flex: 1;
+  min-width: 0;
+}
+.notificacion__titulo {
+  margin: 0;
+  font-weight: 700;
+  color: var(--c-primario);
+}
+.notificacion__mensaje {
+  margin: 2px 0 0;
+  color: var(--c-primario);
+  font-size: 14px;
+}
+.notificacion__fecha {
+  margin: 4px 0 0;
+  font-size: 12px;
+  color: var(--c-texto-sec);
+}
+.notificacion__acciones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-end;
+}
+.paginacion {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  margin-top: 18px;
+}
+@media (max-width: 600px) {
+  .notificacion {
+    flex-wrap: wrap;
+  }
+  .notificacion__acciones {
+    width: 100%;
+    justify-content: flex-start;
+  }
+}

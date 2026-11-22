@@ -3,6 +3,7 @@ import Layout from './components/Layout.jsx';
 import PaginaPublica from './pages/PaginaPublica.jsx';
 import Inicio from './pages/Inicio.jsx';
 import EnConstruccion from './pages/EnConstruccion.jsx';
+import Notificaciones from './pages/Notificaciones.jsx';
 import IniciarSesion from './pages/IniciarSesion.jsx';
 import Registro from './pages/Registro.jsx';
 import RecuperarContrasena from './pages/RecuperarContrasena.jsx';
@@ -112,10 +113,8 @@ export default function App() {
         />
         <Route path="/perfil" element={<EnConstruccion titulo="Mi perfil" />} />
         <Route path="/ayuda" element={<EnConstruccion titulo="Ayuda" />} />
-        <Route
-          path="/notificaciones"
-          element={<EnConstruccion titulo="Notificaciones" />}
-        />
+        {/* Ep5-Hu1: notificaciones y recordatorios */}
+        <Route path="/notificaciones" element={<Notificaciones />} />
         <Route path="*" element={<Navigate to="/inicio" replace />} />
       </Route>
     </Routes>

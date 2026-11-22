@@ -21,6 +21,7 @@ async function iniciarSesion(correo, contrasena = 'Vet12345') {
 const api = (token) => ({
     get: (url) => request(app).get(url).set('Authorization', `Bearer ${token}`),
     post: (url, body) => request(app).post(url).set('Authorization', `Bearer ${token}`).send(body),
+    patch: (url, body) => request(app).patch(url).set('Authorization', `Bearer ${token}`).send(body),
     put: (url, body) => request(app).put(url).set('Authorization', `Bearer ${token}`).send(body),
     delete: (url) => request(app).delete(url).set('Authorization', `Bearer ${token}`),
 });

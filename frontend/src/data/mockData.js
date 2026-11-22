@@ -20,5 +20,3 @@ export const proximaCita = {
   clinica: 'Clínica VetCare',
   veterinario: 'Dra. Camila Ríos',
 };
-
-export const tieneNotificaciones = true;

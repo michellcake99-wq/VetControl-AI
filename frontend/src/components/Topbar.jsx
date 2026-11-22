@@ -1,6 +1,8 @@
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Bell, Menu } from 'lucide-react';
-import { usuario, tieneNotificaciones } from '../data/mockData.js';
+import { usuario } from '../data/mockData.js';
+import { api } from '../services/api.js';
 import { iniciales } from '../utils/format.js';
 import { obtenerSesion } from '../utils/sesion.js';
 
@@ -10,10 +12,38 @@ const PORTAL_POR_ROL = {
   administrador: 'Panel de administración',
 };
 
+// Ep5-Hu1: número de notificaciones sin leer (se renueva cada minuto y cuando la página
+// de notificaciones marca alguna como leída).
+export const EVENTO_NOTIFICACIONES = 'vetcontrol:notificaciones';
+const CADA_MS = 60 * 1000;
+
+function useNoLeidas() {
+  const [noLeidas, setNoLeidas] = useState(0);
+  useEffect(() => {
+    if (!obtenerSesion()?.token) return undefined;
+    let activo = true;
+    const cargar = () =>
+      api
+        .get('/notificaciones/no-leidas')
+        .then((r) => activo && setNoLeidas(r.no_leidas))
+        .catch(() => {});
+    cargar();
+    const reloj = setInterval(cargar, CADA_MS);
+    window.addEventListener(EVENTO_NOTIFICACIONES, cargar);
+    return () => {
+      activo = false;
+      clearInterval(reloj);
+      window.removeEventListener(EVENTO_NOTIFICACIONES, cargar);
+    };
+  }, []);
+  return noLeidas;
+}
+
 export default function Topbar({ onAbrirMenu, menuAbierto }) {
   // Datos del usuario que inició sesión (si no hay sesión, se usan los de ejemplo)
   const cuenta = obtenerSesion()?.usuario ?? usuario;
   const portal = PORTAL_POR_ROL[cuenta.rol] ?? 'Portal de propietarios';
+  const noLeidas = useNoLeidas();
   return (
     <header className="topbar">
       <button
@@ -34,14 +64,16 @@ export default function Topbar({ onAbrirMenu, menuAbierto }) {
           to="/notificaciones"
           className="topbar__boton"
           aria-label={
-            tieneNotificaciones
-              ? 'Notificaciones (tienes nuevas)'
+            noLeidas > 0
+              ? `Notificaciones (${noLeidas} sin leer)`
               : 'Notificaciones'
           }
         >
           <Bell size={18} strokeWidth={1.8} />
-          {tieneNotificaciones && (
-            <span className="topbar__punto" aria-hidden="true" />
+          {noLeidas > 0 && (
+            <span className="topbar__contador" aria-hidden="true">
+              {noLeidas > 9 ? '9+' : noLeidas}
+            </span>
           )}
         </Link>
         <Link

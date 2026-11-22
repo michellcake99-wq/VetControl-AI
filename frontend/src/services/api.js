@@ -68,5 +68,6 @@ export const api = {
   get: (ruta) => peticionConSesion(ruta),
   post: (ruta, cuerpo) => peticionConSesion(ruta, { metodo: 'POST', cuerpo }),
   put: (ruta, cuerpo) => peticionConSesion(ruta, { metodo: 'PUT', cuerpo }),
+  patch: (ruta, cuerpo) => peticionConSesion(ruta, { metodo: 'PATCH', cuerpo }),
   delete: (ruta) => peticionConSesion(ruta, { metodo: 'DELETE' }),
 };
