@@ -2,6 +2,8 @@
 // Si el navegador bloquea el almacenamiento, la sesión solo dura mientras no se recargue la página.
 const CLAVE = 'vetcontrol_sesion';
 let respaldo = null;
+// Ep7-Hu3: se activa cuando se borra una sesión porque su token venció (para avisarlo al volver al login)
+let vencio = false;
 
 // Dashboard de cada rol. Hoy solo existe el portal del propietario (/inicio);
 // cuando se construyan los del veterinario y del administrador, se cambian aquí.
@@ -22,7 +24,17 @@ function venceEn(token) {
   }
 }
 
+/** ¿La última sesión se cerró porque venció? (se limpia al iniciar sesión o al cerrarla a propósito) */
+export const sesionVencio = () => vencio;
+
+/** Milisegundos que le quedan al token de la sesión actual (null si no hay sesión). */
+export function msParaVencer() {
+  const sesion = obtenerSesion();
+  return sesion ? venceEn(sesion.token) - Date.now() : null;
+}
+
 export function guardarSesion({ token, usuario }) {
+  vencio = false;
   const sesion = { token, usuario };
   respaldo = sesion;
   try {
@@ -34,6 +46,7 @@ export function guardarSesion({ token, usuario }) {
 
 export function cerrarSesion() {
   respaldo = null;
+  vencio = false;
   try {
     localStorage.removeItem(CLAVE);
   } catch {
@@ -55,6 +68,7 @@ export function obtenerSesion() {
   if (!sesion?.token) return null;
   if (venceEn(sesion.token) <= Date.now()) {
     cerrarSesion();
+    vencio = true;
     return null;
   }
   return sesion;

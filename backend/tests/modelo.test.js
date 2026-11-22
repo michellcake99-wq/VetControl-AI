@@ -6,11 +6,11 @@ afterAll(() => pool.end());
 
 const q = (sql, p) => pool.query(sql, p);
 
-test('existen las 18 tablas del modelo', async () => {
+test('existen las 19 tablas del modelo', async () => {
     const { rows } = await q(`SELECT table_name FROM information_schema.tables WHERE table_schema='public' ORDER BY 1`);
     expect(rows.map((r) => r.table_name)).toEqual([
         'auditoria', 'catalogo_vacunas', 'citas', 'consultas', 'conversaciones', 'evoluciones_tratamiento', 'historias_clinicas',
-        'horarios_veterinario', 'interacciones_ia', 'mascotas', 'mensajes', 'propietarios', 'recordatorios', 'roles', 'tratamientos',
+        'horarios_veterinario', 'intentos_login', 'interacciones_ia', 'mascotas', 'mensajes', 'propietarios', 'recordatorios', 'roles', 'tratamientos',
         'usuarios', 'vacunas', 'veterinarios',
     ]);
 });

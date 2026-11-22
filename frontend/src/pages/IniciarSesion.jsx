@@ -1,5 +1,11 @@
 import { useRef, useState } from 'react';
-import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom';
+import {
+  Link,
+  Navigate,
+  useLocation,
+  useNavigate,
+  useSearchParams,
+} from 'react-router-dom';
 import { CircleAlert, CircleCheck, LoaderCircle } from 'lucide-react';
 import AuthLayout from '../components/AuthLayout.jsx';
 import CampoTexto from '../components/CampoTexto.jsx';
@@ -10,6 +16,9 @@ import { validarCampo } from '../utils/validaciones.js';
 export default function IniciarSesion() {
   const navegar = useNavigate();
   const { state } = useLocation();
+  const [parametros] = useSearchParams();
+  // Ep7-Hu3: la sesión terminó porque el token venció
+  const expirada = Boolean(state?.expirada) || parametros.has('expirada');
   const formulario = useRef(null);
   const [datos, setDatos] = useState({
     correo: state?.correo ?? '',
@@ -77,7 +86,12 @@ export default function IniciarSesion() {
           Tu cuenta se creó correctamente. Ya puedes iniciar sesión.
         </p>
       )}
-      {state?.desde && !state?.registrado && (
+      {expirada && (
+        <p className="aviso aviso--info" role="status">
+          Tu sesión expiró. Inicia sesión de nuevo para continuar.
+        </p>
+      )}
+      {state?.desde && !state?.registrado && !expirada && (
         <p className="aviso aviso--info" role="status">
           Inicia sesión para continuar.
         </p>
