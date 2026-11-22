@@ -77,7 +77,7 @@ describe('Campana de notificaciones', () => {
   test('el recordatorio solo aparece cuando llega su hora', async () => {
     const cita = await solicitar(65, 14);
     await vet.put(`/api/citas/${cita.id_cita}/estado`, { estado: 'confirmada' });
-    const ver = async () => (await ana.get('/api/notificaciones')).body.datos.some((n) => n.id_referencia === cita.id_cita);
+    const ver = async () => (await ana.get('/api/notificaciones')).body.datos.some((n) => n.tipo === 'cita' && n.id_referencia === cita.id_cita);
     expect(await ver()).toBe(false);
     await pool.query("UPDATE recordatorios SET fecha_programada = now() WHERE tipo = 'cita' AND id_referencia = $1", [cita.id_cita]);
 
@@ -135,6 +135,7 @@ describe('Envío por correo', () => {
     const cita = await solicitar(58, 14);
     await pool.query("UPDATE recordatorios SET estado = 'enviado' WHERE estado = 'pendiente'");
     await vet.put(`/api/citas/${cita.id_cita}/estado`, { estado: 'confirmada' });
+    await pool.query("UPDATE recordatorios SET estado = 'enviado' WHERE tipo = 'aviso'"); // el aviso de «cita confirmada» no es lo que se prueba aquí
     await pool.query("UPDATE recordatorios SET fecha_programada = now() WHERE tipo = 'cita' AND id_referencia = $1", [cita.id_cita]);
     const primera = await procesarPendientes();
     const segunda = await procesarPendientes();

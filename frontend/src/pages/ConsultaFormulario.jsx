@@ -224,10 +224,13 @@ export default function ConsultaFormulario() {
     try {
       guardada = editando
         ? await api.put(`/consultas/${id}`, cuerpoConsulta(valores, true))
-        : await api.post(
-            `/historias/${mascotaElegida.id_historia}/consultas`,
-            cuerpoConsulta(valores, false)
-          );
+        : await api.post(`/historias/${mascotaElegida.id_historia}/consultas`, {
+            ...cuerpoConsulta(valores, false),
+            // Ep5-Hu6: viene de completar una cita; la consulta queda asociada a ella
+            ...(parametros.get('cita') && {
+              id_cita: Number(parametros.get('cita')),
+            }),
+          });
     } catch (err) {
       // Errores de validación del backend junto a cada campo
       setErrores(

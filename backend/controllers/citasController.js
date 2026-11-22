@@ -2,7 +2,7 @@ const { query, enTransaccion, construirInsert } = require('../utils/baseDatos');
 const { ErrorHttp, noEncontrado, sinPermiso } = require('../utils/errores');
 const { paginar, respuestaPaginada } = require('../utils/paginacion');
 const { obtenerMascotaAutorizada } = require('../utils/acceso');
-const { sinRomper, sincronizarRecordatorioCita, avisarCitaSolicitada } = require('../utils/notificaciones');
+const { sinRomper, sincronizarRecordatorioCita, avisarCitaSolicitada, avisarCambioEstadoCita } = require('../utils/notificaciones');
 
 // Las citas se agendan en hora de Colombia/Ecuador (UTC-5, sin horario de verano)
 const ZONA = 'America/Bogota';
@@ -23,12 +23,14 @@ const SELECT_CITA = `
 // Quién puede pasar una cita de un estado a otro (estado actual -> nuevo estado -> roles)
 const PERSONAL = ['veterinario', 'administrador'];
 const TODOS = ['propietario', 'veterinario', 'administrador'];
-// Ep3-Hu14: el veterinario confirma la cita solicitada («programada» -> «confirmada»)
-const ACTIVA = { atendida: PERSONAL, cancelada: TODOS, no_asistio: PERSONAL };
+// Ep5-Hu6: transiciones válidas. «solicitada» (programada) solo puede confirmarse o cancelarse;
+// «confirmada» puede completarse (atendida), cancelarse o marcarse como «no asistió».
+// «atendida», «cancelada» y «no_asistio» son estados finales.
+const SOLICITADA = { confirmada: PERSONAL, cancelada: TODOS };
 const TRANSICIONES = {
-  programada: { confirmada: PERSONAL, ...ACTIVA },
-  reprogramada: { confirmada: PERSONAL, ...ACTIVA },
-  confirmada: ACTIVA,
+  programada: SOLICITADA,
+  reprogramada: SOLICITADA,
+  confirmada: { atendida: PERSONAL, cancelada: TODOS, no_asistio: PERSONAL },
 };
 // Estados que ocupan el horario del veterinario
 const ESTADOS_ACTIVOS = "('programada', 'confirmada', 'reprogramada')";
@@ -203,6 +205,8 @@ async function cambiarEstado(req, res) {
   if (!rowCount) throw new ErrorHttp(409, 'La cita cambió de estado mientras la actualizaba; vuelva a consultarla');
   // Ep5-Hu1: confirmar programa el recordatorio; cancelar o cambiar la cita retira el que estaba pendiente
   await sinRomper(() => sincronizarRecordatorioCita(cita.id_cita));
+  // Ep5-Hu6: el propietario recibe un aviso del cambio (y el veterinario si el propietario cancela)
+  await sinRomper(() => avisarCambioEstadoCita(cita.id_cita, req.usuario.rol));
   res.json(await buscarCita(cita.id_cita));
 }
 

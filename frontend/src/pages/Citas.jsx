@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import {
   CalendarCheck,
   CalendarClock,
@@ -60,6 +60,7 @@ export default function Citas() {
   const esPropietario = rol === 'propietario';
   const esPersonal = rol === 'veterinario' || rol === 'administrador';
   const location = useLocation();
+  const navegar = useNavigate();
 
   const [vista, setVista] = useState('proximas');
   const [estado, setEstado] = useState('');
@@ -72,6 +73,8 @@ export default function Citas() {
   const [recargar, setRecargar] = useState(0);
   const [procesando, setProcesando] = useState(null);
   const [porCancelar, setPorCancelar] = useState(null);
+  // Ep5-Hu6: cita recién completada para ofrecer el registro de su consulta
+  const [porRegistrar, setPorRegistrar] = useState(null);
 
   useEffect(() => {
     let cancelado = false;
@@ -141,6 +144,8 @@ export default function Citas() {
           )
         );
       setMensaje(TEXTOS_EXITO[nuevoEstado]);
+      if (nuevoEstado === 'atendida' && rol === 'veterinario')
+        setPorRegistrar(actualizada);
     } catch (err) {
       setError(err.message || 'No se pudo actualizar la cita.');
     } finally {
@@ -273,7 +278,7 @@ export default function Citas() {
                               <Check size={14} /> Confirmar
                             </button>
                           )}
-                          {esPersonal && (
+                          {esPersonal && c.estado === 'confirmada' && (
                             <button
                               type="button"
                               className="boton boton--claro boton--peq"
@@ -283,7 +288,7 @@ export default function Citas() {
                               <CheckCheck size={14} /> Completada
                             </button>
                           )}
-                          {esPersonal && (
+                          {esPersonal && c.estado === 'confirmada' && (
                             <button
                               type="button"
                               className="boton boton--claro boton--peq"
@@ -333,6 +338,22 @@ export default function Citas() {
           confirmando={procesando === porCancelar.id_cita}
           onConfirmar={() => cambiarEstado(porCancelar, 'cancelada')}
           onCancelar={() => setPorCancelar(null)}
+        />
+      )}
+
+      {porRegistrar && (
+        <ModalConfirmar
+          titulo="Cita completada"
+          mensaje={`¿Quieres registrar ahora la consulta de ${porRegistrar.nombre_mascota}? Quedará asociada a esta cita.`}
+          textoConfirmar="Registrar consulta"
+          textoCancelar="Ahora no"
+          claseConfirmar="boton--oscuro"
+          onConfirmar={() =>
+            navegar(
+              `/consultas/nueva?mascota=${porRegistrar.id_mascota}&cita=${porRegistrar.id_cita}`
+            )
+          }
+          onCancelar={() => setPorRegistrar(null)}
         />
       )}
 

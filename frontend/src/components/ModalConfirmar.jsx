@@ -3,6 +3,8 @@ export default function ModalConfirmar({
   mensaje,
   confirmando,
   textoConfirmar = 'Sí, desactivar',
+  textoCancelar = 'Cancelar',
+  claseConfirmar = 'boton--peligro',
   onConfirmar,
   onCancelar,
 }) {
@@ -26,11 +28,11 @@ export default function ModalConfirmar({
             onClick={onCancelar}
             disabled={confirmando}
           >
-            Cancelar
+            {textoCancelar}
           </button>
           <button
             type="button"
-            className="boton boton--peligro"
+            className={`boton ${claseConfirmar}`}
             onClick={onConfirmar}
             disabled={confirmando}
           >
