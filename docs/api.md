@@ -239,6 +239,21 @@ Las consultas se listan de la más reciente a la más antigua e incluyen `nombre
 
 La colección de Postman para probar estas rutas está en `docs/VetControl-AI.postman_collection.json`.
 
+## Historial médico cronológico (Ep4-Hu2)
+
+| Método | Ruta | Quién |
+|---|---|---|
+| GET | `/mascotas/:id/historial?tipo=&desde=&hasta=&orden=&pagina=&limite=` | todos (el propietario solo el de sus mascotas) — solo lectura |
+
+Reúne en una sola lista las consultas, los tratamientos y las vacunas de la mascota.
+
+- `tipo`: `consulta`, `tratamiento` o `vacuna` (sin él, trae los tres).
+- `desde` y `hasta`: fechas `AAAA-MM-DD`, ambas incluidas. Se comparan con el día de la consulta (hora de Colombia), el inicio del tratamiento o la aplicación de la vacuna. `desde` no puede ser posterior a `hasta` (400).
+- `orden`: `desc` (por defecto, lo más reciente primero) o `asc`.
+- Paginado como el resto de listados (`pagina`, `limite`; 20 por página por defecto).
+
+Respuesta: `{ mascota: { id_mascota, nombre, especie }, resumen: { consulta, tratamiento, vacuna }, datos: [...], meta }`. `resumen` cuenta los registros del rango de fechas sin importar el `tipo`, para mostrar cuántos hay de cada uno. Cada elemento de `datos` trae `tipo`, `id`, `fecha`, `momento`, `titulo`, `detalle`, `estado` (solo tratamientos), `id_consulta` y `extra` con los datos propios de su tipo (veterinario, laboratorio, lote, próxima dosis, fecha de fin, etc.). Si la mascota no tiene registros (o ninguno cumple los filtros), `datos` llega vacío y la pantalla muestra el mensaje correspondiente. Una mascota de otro propietario responde 403. No hay rutas para crear, modificar ni borrar desde el historial.
+
 ## Asistente de IA (Ep6-Hu1)
 
 | Método | Ruta | Quién |

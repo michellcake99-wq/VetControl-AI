@@ -9,6 +9,7 @@ import {
   Users,
   Stethoscope,
   ClipboardPlus,
+  History,
 } from 'lucide-react';
 
 // Ep7-Hu1: cada opción del menú indica qué roles la ven
@@ -40,6 +41,13 @@ export const navItems = [
     label: 'Consultas',
     icon: ClipboardPlus,
     roles: TODOS_LOS_ROLES,
+  },
+  // Ep4-Hu2: el propietario revisa el historial médico de sus mascotas
+  {
+    to: '/historial',
+    label: 'Historial médico',
+    icon: History,
+    roles: ['propietario'],
   },
   { to: '/citas', label: 'Citas', icon: Calendar, roles: TODOS_LOS_ROLES },
   { to: '/vacunas', label: 'Vacunas', icon: Syringe, roles: TODOS_LOS_ROLES },

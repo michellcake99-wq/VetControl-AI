@@ -15,6 +15,7 @@ import AccesoDenegado from './pages/AccesoDenegado.jsx';
 import Mascotas from './pages/Mascotas.jsx';
 import MascotaFormulario from './pages/MascotaFormulario.jsx';
 import HistoriaClinica from './pages/HistoriaClinica.jsx';
+import HistorialMedico from './pages/HistorialMedico.jsx';
 import Vacunas from './pages/Vacunas.jsx';
 import Consultas from './pages/Consultas.jsx';
 import ConsultaFormulario from './pages/ConsultaFormulario.jsx';
@@ -109,6 +110,8 @@ export default function App() {
           path="/consultas/:id/editar"
           element={soloPara(SOLO_VETERINARIO, <ConsultaFormulario />)}
         />
+        {/* Ep4-Hu2: historial médico cronológico (consultas, tratamientos y vacunas) */}
+        <Route path="/historial" element={<HistorialMedico />} />
         {/* Ep4-Hu1: acceso al carné de vacunación de cada mascota */}
         <Route path="/vacunas" element={<Vacunas />} />
         {/* Ep8: el chat es solo entre propietario y veterinario */}

@@ -4002,3 +4002,195 @@ a.registro:hover {
 .formulario--medio + .formulario--medio {
   margin-top: 20px;
 }
+
+/* ---------- Ep4-Hu2: historial médico cronológico ---------- */
+.historial-medico__mascota {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 14px 18px;
+  margin-top: 18px;
+}
+.historial-medico__selector {
+  flex: 1 1 auto;
+  max-width: 360px;
+}
+.historial-medico__filtros {
+  margin-top: 18px;
+}
+.historial-medico__tipos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  flex: 1 1 100%;
+}
+.historial-medico__tipo {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 40px;
+  padding: 0 16px;
+  border: 1px solid var(--c-borde);
+  border-radius: 999px;
+  background: var(--c-blanco);
+  color: var(--c-primario);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.historial-medico__tipo:hover {
+  background: var(--c-panel);
+}
+.historial-medico__tipo[aria-pressed='true'] {
+  background: var(--c-primario);
+  border-color: var(--c-primario);
+  color: var(--c-blanco);
+}
+.historial-medico__cantidad {
+  min-width: 22px;
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: var(--c-panel);
+  color: var(--c-primario);
+  font-size: 12px;
+  text-align: center;
+}
+.historial-medico__tipo[aria-pressed='true'] .historial-medico__cantidad {
+  background: rgba(255, 255, 255, 0.22);
+  color: var(--c-blanco);
+}
+.filtro-fecha select {
+  height: 44px;
+  padding: 0 12px;
+  border: 1px solid var(--c-borde);
+  border-radius: var(--r-control);
+  font: inherit;
+  color: var(--c-primario);
+  background: var(--c-blanco);
+}
+.linea__conteo {
+  margin: 4px 0 14px;
+}
+.linea {
+  position: relative;
+  list-style: none;
+  margin: 0;
+  padding: 0 0 0 46px;
+}
+.linea::before {
+  content: '';
+  position: absolute;
+  left: 17px;
+  top: 6px;
+  bottom: 6px;
+  width: 2px;
+  background: var(--c-borde);
+}
+.linea__anio {
+  margin: 18px 0 10px -46px;
+  padding-left: 46px;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: var(--c-texto-sec);
+}
+.linea__anio:first-child {
+  margin-top: 0;
+}
+.linea__item {
+  position: relative;
+  margin-bottom: 14px;
+}
+.linea__icono {
+  position: absolute;
+  left: -46px;
+  top: 12px;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: var(--c-icono-bg);
+  color: var(--c-primario);
+  border: 3px solid var(--c-fondo);
+}
+.linea__item--tratamiento .linea__icono {
+  background: #e4f2ea;
+  color: #1d7a55;
+}
+.linea__item--vacuna .linea__icono {
+  background: #fff4dc;
+  color: #8a5a00;
+}
+.linea__tarjeta {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 14px 18px;
+}
+.linea__cabecera {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 10px;
+  font-size: 13px;
+}
+.linea__fecha {
+  font-weight: 700;
+}
+.linea__tipo {
+  color: var(--c-texto-sec);
+}
+.linea__titulo {
+  font-size: 16px;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+.linea__detalle {
+  font-size: 14px;
+  overflow-wrap: anywhere;
+}
+.linea__datos {
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+.linea__enlace {
+  display: inline-flex;
+  align-items: center;
+  align-self: flex-start;
+  gap: 2px;
+  margin-top: 2px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--c-primario-activo);
+}
+.linea__enlace:hover {
+  text-decoration: underline;
+}
+
+@media (max-width: 640px) {
+  .historial-medico__mascota {
+    padding: 12px 14px;
+  }
+  .historial-medico__selector {
+    max-width: none;
+  }
+  .linea {
+    padding-left: 38px;
+  }
+  .linea::before {
+    left: 13px;
+  }
+  .linea__icono {
+    left: -38px;
+    width: 30px;
+    height: 30px;
+  }
+  .linea__anio {
+    margin-left: -38px;
+    padding-left: 38px;
+  }
+  .linea__tarjeta {
+    padding: 12px 14px;
+  }
+}
