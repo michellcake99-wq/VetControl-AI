@@ -1,6 +1,7 @@
 const { query, enTransaccion, construirInsert, construirUpdate } = require('../utils/baseDatos');
 const { ErrorHttp, noEncontrado, sinPermiso } = require('../utils/errores');
 const { paginar, respuestaPaginada } = require('../utils/paginacion');
+const { sinRomper, sincronizarVacunasRelacionadas } = require('../utils/notificaciones');
 const { esPersonal, obtenerMascotaAutorizada, obtenerHistoriaAutorizada } = require('../utils/acceso');
 
 const NOMBRE_VETERINARIO = `(SELECT u.nombre || ' ' || u.apellido FROM veterinarios v
@@ -358,6 +359,8 @@ async function crearVacuna(req, res) {
         ...datos, id_historia: historia.id_historia, id_veterinario: req.usuario.id_veterinario,
     });
     const { rows } = await query(text, values);
+    // Ep5-Hu2: recordatorio de la próxima dosis (y se cierra el del registro anterior de la misma vacuna)
+    await sinRomper(() => sincronizarVacunasRelacionadas(rows[0].id_vacuna));
     res.status(201).json(await vacunaPorId(rows[0].id_vacuna));
 }
 
@@ -379,6 +382,8 @@ async function actualizarVacuna(req, res) {
     const cambios = await resolverCatalogo(req.body, actual.id_historia);
     const { text, values } = construirUpdate('vacunas', 'id_vacuna', actual.id_vacuna, cambios);
     await query(text, values);
+    // Ep5-Hu2: si cambió la próxima dosis, se actualiza el recordatorio
+    await sinRomper(() => sincronizarVacunasRelacionadas(actual.id_vacuna));
     res.json(await vacunaPorId(actual.id_vacuna));
 }
 
