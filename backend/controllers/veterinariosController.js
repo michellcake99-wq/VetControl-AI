@@ -2,6 +2,7 @@ const bcrypt = require('bcrypt');
 const { query, enTransaccion, construirInsert, construirUpdate } = require('../utils/baseDatos');
 const { ErrorHttp, noEncontrado } = require('../utils/errores');
 const { paginar, respuestaPaginada } = require('../utils/paginacion');
+const { avisarCambioHorario } = require('../utils/atencion');
 
 // Vista del veterinario: perfil (veterinarios) + datos de la cuenta (usuarios)
 const SELECT_VETERINARIO = `
@@ -152,6 +153,7 @@ async function crearHorario(req, res) {
         ...req.body,
     });
     const { rows } = await query(text, values);
+    avisarCambioHorario(req.app, Number(req.params.id)); // Ep8-Hu4
     res.status(201).json(rows[0]);
 }
 
@@ -171,6 +173,7 @@ async function actualizarHorario(req, res) {
         req.body
     );
     const { rows } = await query(text, values);
+    avisarCambioHorario(req.app, Number(req.params.id)); // Ep8-Hu4
     res.json(rows[0]);
 }
 
@@ -181,6 +184,7 @@ async function eliminarHorario(req, res) {
         [Number(req.params.idHorario), Number(req.params.id)]
     );
     if (!rowCount) throw noEncontrado('Horario');
+    avisarCambioHorario(req.app, Number(req.params.id)); // Ep8-Hu4
     res.status(204).end();
 }
 

@@ -73,7 +73,9 @@ app.use(manejoErrores);
 if (require.main === module) {
     // Express y Socket.IO comparten el mismo servidor HTTP
     const servidor = http.createServer(app);
-    iniciarChat(new Server(servidor));
+    const io = new Server(servidor);
+    app.set('io', io); // Ep8-Hu4: permite avisar en tiempo real cuando cambia un horario
+    iniciarChat(io);
     // Envía los recordatorios cuando les llega la hora
     iniciarPlanificador();
     servidor.listen(PORT, () => {

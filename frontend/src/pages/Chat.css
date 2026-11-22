@@ -257,3 +257,77 @@
     display: block;
   }
 }
+
+/* ---------- Ep8-Hu4: estado de atención del veterinario ---------- */
+.estado-atencion {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--c-texto-sec);
+}
+.estado-atencion__punto {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: #9bb3ba;
+  flex: none;
+}
+.estado-atencion--en-linea {
+  color: #1d7a55;
+}
+.estado-atencion--en-linea .estado-atencion__punto {
+  background: #2bb673;
+  box-shadow: 0 0 0 3px #dff5ec;
+}
+.estado-atencion__detalle {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2px 12px;
+  margin-top: 2px;
+}
+.estado-atencion__horario {
+  font-size: 12px;
+  color: var(--c-texto-sec);
+}
+.estado-atencion__horario--fuera {
+  color: #8a5a00;
+}
+.estado-atencion__semana {
+  flex-basis: 100%;
+  font-size: 12px;
+  color: var(--c-texto-sec);
+}
+.estado-atencion__semana summary {
+  cursor: pointer;
+  font-weight: 600;
+  color: var(--c-primario-activo);
+}
+.estado-atencion__semana ul {
+  margin-top: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.chat__aviso-horario {
+  margin: 0;
+  padding: 10px 20px;
+  font-size: 13px;
+  color: #8a5a00;
+  background: #fff4dc;
+  border-top: 1px solid #f0dfb2;
+}
+.chat__aviso-mensaje {
+  align-self: center;
+  max-width: 90%;
+  margin: 2px 0 6px;
+  padding: 8px 12px;
+  font-size: 12px;
+  text-align: center;
+  color: #8a5a00;
+  background: #fff4dc;
+  border-radius: var(--r-control);
+  list-style: none;
+}

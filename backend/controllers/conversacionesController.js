@@ -1,6 +1,7 @@
 const { query } = require('../utils/baseDatos');
 const { noEncontrado, sinPermiso } = require('../utils/errores');
 const { obtenerMascotaAutorizada } = require('../utils/acceso');
+const { estadosDeAtencion } = require('../utils/atencion');
 
 /**
  * Conversación visible solo para sus dos participantes (el propietario y el veterinario).
@@ -60,7 +61,9 @@ async function listarVeterinarios(_req, res) {
           WHERE u.activo
           ORDER BY u.nombre, u.apellido`
     );
-    res.json(rows);
+    // Ep8-Hu4: cada veterinario con su estado de atención (en línea y horario)
+    const estados = await estadosDeAtencion(rows.map((v) => v.id_veterinario));
+    res.json(rows.map((v) => ({ ...v, estado_atencion: estados[v.id_veterinario] })));
 }
 
 // GET /api/conversaciones — conversaciones del usuario, con su último mensaje
@@ -88,7 +91,10 @@ async function listar(req, res) {
           ORDER BY COALESCE(ultimo.fecha_envio, c.fecha_registro) DESC`,
         [id_propietario, id_veterinario]
     );
-    res.json(rows);
+    // Ep8-Hu4: el propietario ve el estado de atención de cada veterinario con el que conversa
+    if (req.usuario.rol !== 'propietario') return res.json(rows);
+    const estados = await estadosDeAtencion(rows.map((c) => c.id_veterinario));
+    res.json(rows.map((c) => ({ ...c, estado_atencion: estados[c.id_veterinario] })));
 }
 
 // POST /api/conversaciones — el propietario inicia (o retoma) una conversación con un veterinario
