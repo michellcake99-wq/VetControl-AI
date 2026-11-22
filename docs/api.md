@@ -284,4 +284,5 @@ Cuándo se generan:
 
 - Cita **confirmada** → recordatorio al propietario 24 h antes (si falta menos, sale de inmediato). Si la cita se cancela o cambia de fecha, el recordatorio pendiente se cancela o se reprograma. No se crea dos veces el mismo recordatorio.
 - Cita **solicitada** por un propietario → aviso al veterinario.
+- Vacuna registrada con `proxima_dosis` (Ep5-Hu2) → recordatorio al propietario 7 días antes, a las 8:00 a. m. (hora de la clínica), con el nombre de la mascota, la vacuna y la fecha; si faltan menos de 7 días sale de inmediato. Si la fecha se corrige (`PUT /vacunas/:id`) el recordatorio se actualiza o, si se quita la fecha, se cancela. Cuando se registra una nueva aplicación de la misma vacuna para esa mascota (la dosis ya se aplicó), o la fecha ya pasó, no se recuerda más.
 - Cada minuto el servidor envía por correo (Brevo) los recordatorios que ya llegaron a su hora. Variables del `.env`: `BREVO_API_KEY`, `CORREO_REMITENTE` y, opcional, `CORREO_NOMBRE`. Sin esas variables las notificaciones siguen apareciendo en la plataforma, pero no se envía correo.

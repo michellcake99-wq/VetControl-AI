@@ -79,6 +79,74 @@ async function sincronizarRecordatorioCita(idCita) {
     );
 }
 
+
+const fechaDia = (dia) =>
+    new Intl.DateTimeFormat('es-CO', { dateStyle: 'full', timeZone: 'UTC' }).format(new Date(`${dia}T12:00:00Z`));
+
+const DIAS_ANTES_VACUNA = 7;
+
+/**
+ * Ep5-Hu2: deja el recordatorio de la próxima dosis de una vacuna acorde con su registro.
+ *  - Con «proxima_dosis» vigente: recordatorio 7 días antes (8:00 a. m., hora de la clínica).
+ *    Si ya falta menos, se avisa de inmediato.
+ *  - Si la fecha cambia o se quita, el recordatorio pendiente se cancela y se crea el nuevo.
+ *  - Si la dosis ya se aplicó (hay un registro posterior de la misma vacuna para esa mascota)
+ *    o la fecha ya pasó, no se recuerda más.
+ */
+async function sincronizarRecordatorioVacuna(idVacuna) {
+    const { rows } = await query(
+        `SELECT va.id_vacuna, va.nombre, va.proxima_dosis, va.fecha_aplicacion, m.id_mascota, m.nombre AS mascota,
+                p.id_usuario AS usuario_propietario,
+                (va.proxima_dosis IS NOT NULL AND va.proxima_dosis >= (now() AT TIME ZONE '${ZONA}')::date) AS futura,
+                EXISTS (SELECT 1 FROM vacunas v2 JOIN historias_clinicas h2 ON h2.id_historia = v2.id_historia
+                         WHERE h2.id_mascota = m.id_mascota AND lower(v2.nombre) = lower(va.nombre)
+                           AND (v2.fecha_aplicacion > va.fecha_aplicacion
+                                OR (v2.fecha_aplicacion = va.fecha_aplicacion AND v2.id_vacuna > va.id_vacuna))) AS ya_aplicada,
+                (va.proxima_dosis::timestamp AT TIME ZONE '${ZONA}') AS evento,
+                GREATEST(((va.proxima_dosis - ${DIAS_ANTES_VACUNA})::timestamp + interval '8 hours') AT TIME ZONE '${ZONA}', now()) AS programada
+           FROM vacunas va
+           JOIN historias_clinicas h ON h.id_historia = va.id_historia
+           JOIN mascotas m ON m.id_mascota = h.id_mascota
+           JOIN propietarios p ON p.id_propietario = m.id_propietario
+          WHERE va.id_vacuna = $1`,
+        [idVacuna]
+    );
+    const v = rows[0];
+    if (!v) return;
+    const vigente = v.futura && !v.ya_aplicada;
+
+    await query(
+        `UPDATE recordatorios SET estado = 'cancelado'
+         WHERE tipo = 'vacuna' AND id_referencia = $1 AND estado = 'pendiente'
+           AND ($2::boolean = FALSE OR fecha_evento IS DISTINCT FROM $3::timestamptz)`,
+        [idVacuna, vigente, v.evento]
+    );
+    if (!vigente) return;
+
+    const mensaje = `Recordatorio: ${v.mascota} debe recibir la dosis de la vacuna ${v.nombre} el ${fechaDia(v.proxima_dosis)}.`;
+    await query(
+        `INSERT INTO recordatorios
+           (id_usuario, id_mascota, tipo, id_referencia, titulo, mensaje, enlace, fecha_programada, fecha_evento)
+         VALUES ($1, $2, 'vacuna', $3, 'Recordatorio de vacuna', $4, '/vacunas', $5, $6)
+         ON CONFLICT (id_usuario, tipo, id_referencia, fecha_evento)
+           WHERE fecha_evento IS NOT NULL AND estado <> 'cancelado' DO NOTHING`,
+        [v.usuario_propietario, v.id_mascota, idVacuna, mensaje.slice(0, 300), v.programada, v.evento]
+    );
+}
+
+/** Revisa todas las vacunas de la misma mascota y nombre (un registro nuevo cierra el recordatorio del anterior). */
+async function sincronizarVacunasRelacionadas(idVacuna) {
+    const { rows } = await query(
+        `SELECT v2.id_vacuna FROM vacunas va
+           JOIN historias_clinicas h ON h.id_historia = va.id_historia
+           JOIN historias_clinicas h2 ON h2.id_mascota = h.id_mascota
+           JOIN vacunas v2 ON v2.id_historia = h2.id_historia AND lower(v2.nombre) = lower(va.nombre)
+          WHERE va.id_vacuna = $1`,
+        [idVacuna]
+    );
+    for (const { id_vacuna } of rows) await sincronizarRecordatorioVacuna(id_vacuna);
+}
+
 /** Avisa al veterinario de que un propietario pidió una cita. */
 async function avisarCitaSolicitada(idCita) {
     const cita = await datosCita(idCita);
@@ -123,4 +191,4 @@ async function procesarPendientes() {
     return { procesados: rows.length, correos };
 }
 
-module.exports = { crearAviso, sincronizarRecordatorioCita, avisarCitaSolicitada, procesarPendientes, sinRomper, formatoFecha };
+module.exports = { crearAviso, sincronizarRecordatorioCita, sincronizarVacunasRelacionadas, avisarCitaSolicitada, procesarPendientes, sinRomper, formatoFecha };
