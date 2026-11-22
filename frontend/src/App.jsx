@@ -3,10 +3,12 @@ import Layout from './components/Layout.jsx';
 import PaginaPublica from './pages/PaginaPublica.jsx';
 import Inicio from './pages/Inicio.jsx';
 import EnConstruccion from './pages/EnConstruccion.jsx';
+import MiPerfil from './pages/MiPerfil.jsx';
 import Notificaciones from './pages/Notificaciones.jsx';
 import IniciarSesion from './pages/IniciarSesion.jsx';
 import Registro from './pages/Registro.jsx';
 import RecuperarContrasena from './pages/RecuperarContrasena.jsx';
+import RestablecerContrasena from './pages/RestablecerContrasena.jsx';
 import RutaProtegida from './components/RutaProtegida.jsx';
 import Chat from './pages/Chat.jsx';
 import AccesoDenegado from './pages/AccesoDenegado.jsx';
@@ -42,6 +44,10 @@ export default function App() {
       <Route path="/iniciar-sesion" element={<IniciarSesion />} />
       <Route path="/registro" element={<Registro />} />
       <Route path="/recuperar-contrasena" element={<RecuperarContrasena />} />
+      <Route
+        path="/restablecer-contrasena"
+        element={<RestablecerContrasena />}
+      />
 
       {/* Todo lo de adentro exige sesión iniciada */}
       <Route
@@ -111,7 +117,7 @@ export default function App() {
           path="/asistente"
           element={<EnConstruccion titulo="Asistente IA" />}
         />
-        <Route path="/perfil" element={<EnConstruccion titulo="Mi perfil" />} />
+        <Route path="/perfil" element={<MiPerfil />} />
         <Route path="/ayuda" element={<EnConstruccion titulo="Ayuda" />} />
         {/* Ep5-Hu1: notificaciones y recordatorios */}
         <Route path="/notificaciones" element={<Notificaciones />} />

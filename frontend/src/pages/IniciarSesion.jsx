@@ -86,6 +86,12 @@ export default function IniciarSesion() {
           Tu cuenta se creó correctamente. Ya puedes iniciar sesión.
         </p>
       )}
+      {state?.contrasenaCambiada && (
+        <p className="aviso aviso--exito" role="status">
+          <CircleCheck size={18} aria-hidden="true" />
+          Tu contraseña se actualizó. Inicia sesión con la nueva.
+        </p>
+      )}
       {expirada && (
         <p className="aviso aviso--info" role="status">
           Tu sesión expiró. Inicia sesión de nuevo para continuar.

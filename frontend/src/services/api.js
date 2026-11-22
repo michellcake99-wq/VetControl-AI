@@ -49,6 +49,20 @@ export const iniciarSesion = (correo, contrasena) =>
 export const registrarUsuario = (datos) =>
   peticion('/auth/register', { metodo: 'POST', cuerpo: datos });
 
+// Ep7-Hu4: recuperación de contraseña
+export const solicitarRecuperacion = (correo) =>
+  peticion('/auth/olvide-contrasena', { metodo: 'POST', cuerpo: { correo } });
+export const verificarTokenRecuperacion = (token) =>
+  peticion('/auth/verificar-token-recuperacion', {
+    metodo: 'POST',
+    cuerpo: { token },
+  });
+export const restablecerContrasena = (token, contrasena, confirmacion) =>
+  peticion('/auth/restablecer-contrasena', {
+    metodo: 'POST',
+    cuerpo: { token, contrasena, confirmacion },
+  });
+
 // Cliente para las pantallas internas (Ep3-Hu11, Ep4-Hu5…): envía el token de la sesión.
 // Si el backend responde 401 (token vencido o cuenta desactivada), cierra la sesión
 // y lleva al inicio de sesión.

@@ -13,6 +13,18 @@ POST /api/auth/login   {"correo": "vet@vetcontrol.com", "contrasena": "Vet12345"
 - Una cuenta desactivada no puede iniciar sesión (`403`) y su token deja de servir (`401`).
 - **Bloqueo:** tras **5 intentos fallidos en 15 minutos** (contraseña incorrecta o correo inexistente) el login de ese correo responde `429` con `{ "codigo": "cuenta_bloqueada", "reintentar_en_minutos": N }` durante 15 minutos, incluso con la contraseña correcta. Un inicio de sesión correcto borra los intentos. Los intentos se guardan en la tabla `intentos_login` (migración `008`).
 
+### Recuperación de contraseña (Ep7-Hu4)
+
+Rutas públicas (no necesitan token):
+
+| Método | Ruta | Descripción |
+|---|---|---|
+| POST | `/auth/olvide-contrasena` | `{ "correo": "..." }` — envía un enlace por correo. Responde **siempre lo mismo** exista o no el correo (y no envía a cuentas desactivadas). Máximo 5 solicitudes por hora por cuenta; un enlace nuevo anula el anterior |
+| POST | `/auth/verificar-token-recuperacion` | `{ "token": "..." }` — `200` si el enlace sirve; `400` si ya se usó, venció o no existe |
+| POST | `/auth/restablecer-contrasena` | `{ "token", "contrasena", "confirmacion" }` — mínimo 8 caracteres y deben coincidir. El token es de **un solo uso**, vale **1 hora** y en la base solo se guarda su hash SHA-256 (tabla `tokens_recuperacion`, migración `009`). Al cambiar la contraseña también se quita el bloqueo por intentos fallidos |
+
+El enlace del correo apunta a `FRONTEND_URL/restablecer-contrasena?token=...`. Variables del `.env`: `FRONTEND_URL` (por defecto `http://localhost:5173`) y las del correo (`BREVO_API_KEY`, `CORREO_REMITENTE`). Sin correo configurado y fuera de producción, el enlace se escribe en la consola del servidor para poder probar.
+
 Usuarios de `database/seed.sql` (clave `Vet12345`): `admin@vetcontrol.com` (administrador), `vet@vetcontrol.com` y `vet2@vetcontrol.com` (veterinarios), `ana@correo.com` (dueña de Max y Luna), `carlos@correo.com` (dueño de Rocky), `marta@correo.com` (dueña de Kiwi).
 
 "Personal" = veterinario o administrador.
