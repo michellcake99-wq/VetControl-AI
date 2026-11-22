@@ -29,6 +29,16 @@ Usuarios de `database/seed.sql` (clave `Vet12345`): `admin@vetcontrol.com` (admi
 
 "Personal" = veterinario o administrador.
 
+## Mi perfil (Ep4-Hu4)
+
+Cualquier rol; cada usuario solo ve y edita **su propio** perfil (se usa el usuario del token, nunca un id enviado).
+
+| Método | Ruta | Descripción |
+|---|---|---|
+| GET | `/perfil` | Datos del usuario: nombre, apellido, correo y rol; propietario: + teléfono, tipo y número de documento, dirección; veterinario: + teléfono, tarjeta profesional, especialidad. El administrador no tiene teléfono en el modelo |
+| PUT | `/perfil` | Edita los datos del rol (propietario: `nombre, apellido, telefono, direccion, tipo_documento, numero_documento`; veterinario: `nombre, apellido, telefono, especialidad, tarjeta_profesional`; administrador: `nombre, apellido`). El **correo y el rol no se pueden cambiar** (`400`). El documento y la tarjeta profesional, una vez registrados, solo los cambia el personal (`403`); un valor ya usado por otra persona responde `409` |
+| PUT | `/perfil/contrasena` | `{ "contrasena_actual", "contrasena_nueva", "confirmacion" }` — exige la actual (si es incorrecta responde `400` con `campo: contrasena_actual`, sin cerrar la sesión), mínimo 8 caracteres, que coincidan y que sea distinta de la actual. Se guarda encriptada |
+
 ## Propietarios (Ep3-Hu4)
 
 | Método | Ruta | Quién |

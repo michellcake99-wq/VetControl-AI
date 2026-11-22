@@ -3992,3 +3992,13 @@ a.registro:hover {
   flex-wrap: wrap;
   gap: 8px;
 }
+
+/* ---------- Ep4-Hu4: Mi perfil ---------- */
+.campo input.campo__solo-lectura {
+  background: var(--c-panel);
+  color: var(--c-texto-sec);
+  cursor: not-allowed;
+}
+.formulario--medio + .formulario--medio {
+  margin-top: 20px;
+}
