@@ -29,4 +29,7 @@ router.get('/:id/historia', id, h.obtenerPorMascota);
 router.get('/:id/consultas', id, cm.listarConsultas);
 router.get('/:id/tratamientos', id, cm.listarTratamientos);
 
+// Ep4-Hu2: historial médico cronológico (consultas, tratamientos y vacunas; solo lectura)
+router.get('/:id/historial', id, cm.historial);
+
 module.exports = router;
