@@ -205,6 +205,8 @@ const iaConsultar = z.object({
     id_mascota: z.number().int().positive().nullish(),
 });
 
+const iaResumir = z.object({ id_mascota: z.number({ message: 'Es obligatorio' }).int().positive() });
+
 module.exports = {
     parametroId,
     propietarioCrear, propietarioActualizar,
@@ -213,5 +215,5 @@ module.exports = {
     tratamientoCrear, tratamientoActualizar, vacunaCrear, vacunaActualizar, evolucionCrear,
     conversacionCrear, mensajeEnviar,
     veterinarioCrear, veterinarioActualizar, horarioCrear, horarioActualizar,
-    iaConsultar, ORGANOS_SISTEMAS, ACTITUDES,
+    iaConsultar, iaResumir, ORGANOS_SISTEMAS, ACTITUDES,
 };

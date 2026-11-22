@@ -3949,3 +3949,46 @@ a.registro:hover {
     justify-content: flex-start;
   }
 }
+
+/* ---------- Ep6-Hu2: resumen de la historia con IA ---------- */
+.resumen-ia {
+  margin-bottom: 18px;
+}
+.resumen-ia__panel {
+  margin-top: 14px;
+  padding: 18px 20px;
+  border-color: var(--c-chevron);
+  background: var(--c-panel);
+}
+.resumen-ia__titulo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 12px;
+  font-size: 17px;
+  color: var(--c-primario);
+}
+.resumen-ia__seccion h3 {
+  margin: 12px 0 4px;
+  font-size: 14px;
+  color: var(--c-primario);
+}
+.resumen-ia__seccion ul {
+  list-style: disc;
+  margin: 0;
+  padding-left: 20px;
+  color: var(--c-primario);
+  font-size: 14px;
+  line-height: 1.5;
+}
+.resumen-ia__aviso {
+  margin: 16px 0 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--c-borde);
+  font-size: 12.5px;
+}
+.resumen-ia__acciones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}

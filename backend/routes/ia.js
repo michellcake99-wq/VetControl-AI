@@ -9,5 +9,7 @@ const c = require('../controllers/iaController');
 const router = express.Router();
 router.use(verificarToken, cargarPerfil);
 router.post('/consultar', validar(esquemas.iaConsultar), c.consultar);
+// Ep6-Hu2: resumen de la historia clínica de una mascota
+router.post('/resumir-historial', validar(esquemas.iaResumir), c.resumirHistorial);
 
 module.exports = router;
