@@ -7,6 +7,12 @@ POST /api/auth/login   {"correo": "vet@vetcontrol.com", "contrasena": "Vet12345"
 → usar el token en el header:  Authorization: Bearer <token>
 ```
 
+### Sesión y seguridad del inicio de sesión (Ep7-Hu3)
+
+- El token JWT dura **2 horas**. Con el token vencido las rutas responden `401` con `{ "mensaje": "Tu sesión expiró. Inicia sesión de nuevo para continuar.", "codigo": "sesion_expirada" }`; la interfaz cierra la sesión y lleva al inicio de sesión con ese mensaje. «Cerrar sesión» borra el token y vuelve a la página principal.
+- Una cuenta desactivada no puede iniciar sesión (`403`) y su token deja de servir (`401`).
+- **Bloqueo:** tras **5 intentos fallidos en 15 minutos** (contraseña incorrecta o correo inexistente) el login de ese correo responde `429` con `{ "codigo": "cuenta_bloqueada", "reintentar_en_minutos": N }` durante 15 minutos, incluso con la contraseña correcta. Un inicio de sesión correcto borra los intentos. Los intentos se guardan en la tabla `intentos_login` (migración `008`).
+
 Usuarios de `database/seed.sql` (clave `Vet12345`): `admin@vetcontrol.com` (administrador), `vet@vetcontrol.com` y `vet2@vetcontrol.com` (veterinarios), `ana@correo.com` (dueña de Max y Luna), `carlos@correo.com` (dueño de Rocky), `marta@correo.com` (dueña de Kiwi).
 
 "Personal" = veterinario o administrador.
@@ -215,6 +221,7 @@ La colección de Postman para probar estas rutas está en `docs/VetControl-AI.po
 
 | Método | Ruta | Quién |
 |---|---|---|
+| POST | `/ia/resumir-historial` | todos (con token) — `{ "id_mascota": 1 }`; el propietario solo para sus mascotas. Resume antecedentes, diagnósticos recientes, tratamientos activos y vacunas usando solo los datos de esa mascota. Responde `{ respuesta, aviso, modelo, fecha, consultas_restantes }`; `aviso` es el texto que indica que lo generó una IA. Cuenta para el límite de consultas y queda en `interacciones_ia` (Ep6-Hu2) |
 | POST | `/ia/consultar` | todos (con token). Con `id_mascota`, el propietario solo puede preguntar por las suyas |
 
 ```json

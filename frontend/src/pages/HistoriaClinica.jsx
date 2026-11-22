@@ -15,6 +15,7 @@ import {
   MotivoConsulta,
   OrganosSistemas,
 } from '../components/historia/ExamenClinico.jsx';
+import ResumenIA from '../components/historia/ResumenIA.jsx';
 import CarneVacunas from '../components/historia/CarneVacunas.jsx';
 import {
   EncabezadoDocumento,
@@ -142,6 +143,12 @@ export default function HistoriaClinica() {
         </button>
       </header>
       <Alerta tipo="error">{errorPDF}</Alerta>
+
+      {/* Ep6-Hu2: resumen de la historia con IA */}
+      <ResumenIA
+        idMascota={mascota.id_mascota}
+        nombreMascota={mascota.nombre}
+      />
 
       <article
         ref={documento}

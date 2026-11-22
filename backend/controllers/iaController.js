@@ -88,6 +88,32 @@ async function registrarInteraccion(datos) {
     return rows[0];
 }
 
+/** Llama a la IA, guarda la interacción (también si falla) y devuelve lo que se responde al cliente. */
+async function ejecutarIA({ usuario, mascota, mensajes, pregunta, restantes }) {
+    const inicio = Date.now();
+    const base = { id_usuario: usuario.id_usuario, id_mascota: mascota?.id_mascota, pregunta };
+    try {
+        const { respuesta, modelo } = await generarRespuesta(mensajes);
+        const guardada = await registrarInteraccion({
+            ...base, respuesta, modelo, exitosa: true, duracion_ms: Date.now() - inicio,
+        });
+        return {
+            id_interaccion: Number(guardada.id_interaccion),
+            respuesta,
+            modelo,
+            fecha: guardada.fecha,
+            consultas_restantes: restantes - 1,
+        };
+    } catch (error) {
+        // También se guarda el intento fallido (cuenta para el límite y queda el registro del error)
+        await registrarInteraccion({
+            ...base, modelo: config().modelo, exitosa: false,
+            error: error.causa ?? error.message, duracion_ms: Date.now() - inicio,
+        }).catch(() => {});
+        throw error;
+    }
+}
+
 // POST /api/ia/consultar   { pregunta, id_mascota? }
 async function consultar(req, res) {
     const { pregunta, id_mascota: idMascota } = req.body;
@@ -101,28 +127,38 @@ async function consultar(req, res) {
     if (mascota) mensajes.push({ role: 'system', content: await contextoMascota(mascota) });
     mensajes.push({ role: 'user', content: pregunta });
 
-    const inicio = Date.now();
-    const base = { id_usuario: usuario.id_usuario, id_mascota: mascota?.id_mascota, pregunta };
-    try {
-        const { respuesta, modelo } = await generarRespuesta(mensajes);
-        const guardada = await registrarInteraccion({
-            ...base, respuesta, modelo, exitosa: true, duracion_ms: Date.now() - inicio,
-        });
-        res.json({
-            id_interaccion: Number(guardada.id_interaccion),
-            respuesta,
-            modelo,
-            fecha: guardada.fecha,
-            consultas_restantes: restantes - 1,
-        });
-    } catch (error) {
-        // También se guarda el intento fallido (cuenta para el límite y queda el registro del error)
-        await registrarInteraccion({
-            ...base, modelo: config().modelo, exitosa: false,
-            error: error.causa ?? error.message, duracion_ms: Date.now() - inicio,
-        }).catch(() => {});
-        throw error;
-    }
+    res.json(await ejecutarIA({ usuario, mascota, mensajes, pregunta, restantes }));
 }
 
-module.exports = { consultar };
+// Ep6-Hu2: resumen de la historia clínica
+const AVISO_RESUMEN = 'Resumen generado por inteligencia artificial a partir de los registros de la clínica. '
+    + 'Es un apoyo y no reemplaza el criterio del veterinario; verifica los datos importantes en la historia clínica.';
+
+const INSTRUCCIONES_RESUMEN = `Eres el asistente de VetControl AI, la plataforma de una clínica veterinaria.
+Tu tarea es resumir la historia clínica de UNA mascota en español, de forma breve y clara.
+Usa ÚNICAMENTE los datos que se te entregan de esa mascota: no inventes información, no agregues diagnósticos
+ni recomendaciones, y no uses datos de otras mascotas. Si falta información de una sección, escribe "Sin registros".
+Responde en texto plano (sin asteriscos ni símbolos de formato) con exactamente estas cuatro secciones, cada título
+en su propia línea terminando en dos puntos, y los elementos como líneas que empiezan con "- ":
+Antecedentes:
+Diagnósticos recientes:
+Tratamientos activos:
+Vacunas:`;
+
+// POST /api/ia/resumir-historial   { id_mascota }
+async function resumirHistorial(req, res) {
+    const usuario = req.usuario;
+    const mascota = await obtenerMascotaAutorizada(req.body.id_mascota, usuario);
+    const restantes = await verificarLimite(usuario.id_usuario);
+
+    const mensajes = [
+        { role: 'system', content: INSTRUCCIONES_RESUMEN },
+        { role: 'user', content: `${await contextoMascota(mascota)}\n\nResume la historia clínica de ${mascota.nombre}.` },
+    ];
+    const resultado = await ejecutarIA({
+        usuario, mascota, mensajes, restantes, pregunta: `Resumen del historial de ${mascota.nombre}`,
+    });
+    res.json({ ...resultado, aviso: AVISO_RESUMEN });
+}
+
+module.exports = { consultar, resumirHistorial };
