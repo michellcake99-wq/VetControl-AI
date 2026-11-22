@@ -15,7 +15,7 @@
 
 BEGIN;
 
-DROP TABLE IF EXISTS interacciones_ia, auditoria, horarios_veterinario, mensajes, conversaciones, recordatorios,
+DROP TABLE IF EXISTS intentos_login, interacciones_ia, auditoria, horarios_veterinario, mensajes, conversaciones, recordatorios,
   evoluciones_tratamiento, tratamientos, vacunas, catalogo_vacunas, consultas, historias_clinicas, citas, mascotas,
   veterinarios, propietarios, usuarios, roles CASCADE;
 DROP TYPE IF EXISTS sexo_mascota, estado_cita, estado_tratamiento,
@@ -256,6 +256,14 @@ CREATE TABLE vacunas (
 );
 CREATE INDEX idx_vacunas_historia      ON vacunas(id_historia);
 CREATE INDEX idx_vacunas_proxima_dosis ON vacunas(proxima_dosis);
+
+-- Ep7-Hu3: intentos fallidos de inicio de sesión (5 en 15 minutos bloquean el acceso por 15 minutos)
+CREATE TABLE intentos_login (
+  id_intento  BIGSERIAL PRIMARY KEY,
+  correo      VARCHAR(120) NOT NULL,   -- en minúsculas
+  fecha       TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX idx_intentos_login_correo ON intentos_login(correo, fecha DESC);
 
 -- ---------------------------------------------------------------------
 --  Recordatorios (citas, vacunas, tratamientos, seguimientos de la IA)

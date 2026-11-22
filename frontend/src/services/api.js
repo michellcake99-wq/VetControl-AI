@@ -53,12 +53,15 @@ export const registrarUsuario = (datos) =>
 // Si el backend responde 401 (token vencido o cuenta desactivada), cierra la sesión
 // y lleva al inicio de sesión.
 async function peticionConSesion(ruta, opciones = {}) {
+  const token = obtenerSesion()?.token;
   try {
-    return await peticion(ruta, { ...opciones, token: obtenerSesion()?.token });
+    return await peticion(ruta, { ...opciones, token });
   } catch (error) {
-    if (error.estado === 401) {
+    // Ep7-Hu3: solo si había una sesión que terminó (token vencido o cuenta desactivada);
+    // una petición sin sesión (por ejemplo, justo después de cerrarla) no redirige
+    if (error.estado === 401 && token) {
       cerrarSesion();
-      window.location.assign('/iniciar-sesion');
+      window.location.assign('/iniciar-sesion?expirada=1');
     }
     throw error;
   }

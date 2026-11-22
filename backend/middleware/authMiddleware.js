@@ -35,6 +35,13 @@ const verificarToken = (req, res, next) => {
         next();
 
     } catch (error) {
+        // Ep7-Hu3: el token dura 2 horas; al vencer, el cliente muestra el mensaje y lleva al inicio de sesión
+        if (error.name === 'TokenExpiredError') {
+            return res.status(401).json({
+                mensaje: 'Tu sesión expiró. Inicia sesión de nuevo para continuar.',
+                codigo: 'sesion_expirada'
+            });
+        }
         return res.status(401).json({
             mensaje: 'Token inválido o expirado'
         });

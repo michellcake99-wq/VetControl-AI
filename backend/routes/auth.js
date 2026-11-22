@@ -6,6 +6,41 @@ require('dotenv').config();
 
 const router = express.Router();
 
+// Ep7-Hu3: bloqueo tras 5 intentos fallidos en 15 minutos
+const MAX_INTENTOS = 5;
+const VENTANA_MIN = 15;
+
+/** Minutos que faltan para poder intentar de nuevo (0 si el correo no está bloqueado). */
+async function minutosDeBloqueo(correo) {
+    const { rows } = await pool.query(
+        `SELECT fecha FROM intentos_login
+          WHERE correo = $1 AND fecha > now() - make_interval(mins => $2)
+          ORDER BY fecha DESC LIMIT $3`,
+        [correo, VENTANA_MIN, MAX_INTENTOS]
+    );
+    if (rows.length < MAX_INTENTOS) return 0;
+    // El bloqueo dura hasta 15 minutos después del intento que lo causó (el quinto, el más antiguo de los cinco)
+    const hasta = new Date(rows[MAX_INTENTOS - 1].fecha).getTime() + VENTANA_MIN * 60000;
+    return Math.max(1, Math.ceil((hasta - Date.now()) / 60000));
+}
+
+const respuestaBloqueo = (res, minutos) =>
+    res.status(429).json({
+        mensaje: `Demasiados intentos fallidos. Por seguridad, el acceso quedó bloqueado temporalmente. `
+            + `Intenta de nuevo en ${minutos} ${minutos === 1 ? 'minuto' : 'minutos'}.`,
+        codigo: 'cuenta_bloqueada',
+        reintentar_en_minutos: minutos,
+    });
+
+/** Guarda un intento fallido. Si con este se llega al límite, responde el bloqueo; si no, el error normal. */
+async function intentoFallido(res, correo) {
+    await pool.query('INSERT INTO intentos_login (correo) VALUES ($1)', [correo]);
+    await pool.query("DELETE FROM intentos_login WHERE fecha < now() - interval '1 day'");
+    const minutos = await minutosDeBloqueo(correo);
+    if (minutos) return respuestaBloqueo(res, minutos);
+    return res.status(401).json({ mensaje: 'Correo o contraseña incorrectos' });
+}
+
 // Roles que se pueden elegir al registrarse desde la plataforma.
 // El rol "administrador" no se puede crear desde el registro público.
 const ROLES_PUBLICOS = ['propietario', 'veterinario'];
@@ -90,6 +125,11 @@ router.post('/login', async (req, res) => {
             });
         }
 
+        // Ep7-Hu3: si el correo está bloqueado, ni siquiera se revisa la contraseña
+        const clave = String(correo).trim().toLowerCase();
+        const bloqueo = await minutosDeBloqueo(clave);
+        if (bloqueo) return respuestaBloqueo(res, bloqueo);
+
         // Buscar usuario por correo (junto con el nombre de su rol)
         const resultado = await pool.query(
             `SELECT u.*, r.nombre AS rol
@@ -100,9 +140,7 @@ router.post('/login', async (req, res) => {
         );
 
         if (resultado.rows.length === 0) {
-            return res.status(401).json({
-                mensaje: 'Correo o contraseña incorrectos'
-            });
+            return intentoFallido(res, clave);
         }
 
         const usuario = resultado.rows[0];
@@ -114,10 +152,11 @@ router.post('/login', async (req, res) => {
         );
 
         if (!contraseñaValida) {
-            return res.status(401).json({
-                mensaje: 'Correo o contraseña incorrectos'
-            });
+            return intentoFallido(res, clave);
         }
+
+        // Inicio de sesión correcto: se borran los intentos fallidos de este correo
+        await pool.query('DELETE FROM intentos_login WHERE correo = $1', [clave]);
 
         // Verificar que la cuenta esté activa
         if (!usuario.activo) {

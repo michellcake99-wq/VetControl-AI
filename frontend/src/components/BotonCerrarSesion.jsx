@@ -6,7 +6,8 @@ export default function BotonCerrarSesion() {
   const navegar = useNavigate();
   const salir = () => {
     cerrarSesion();
-    navegar('/iniciar-sesion', { replace: true });
+    // Ep7-Hu3: al cerrar sesión se vuelve a la página principal
+    navegar('/', { replace: true });
   };
   return (
     <button type="button" className="sidebar__salir" onClick={salir}>
