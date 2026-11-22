@@ -16,6 +16,7 @@ import Mascotas from './pages/Mascotas.jsx';
 import MascotaFormulario from './pages/MascotaFormulario.jsx';
 import HistoriaClinica from './pages/HistoriaClinica.jsx';
 import HistorialMedico from './pages/HistorialMedico.jsx';
+import Asistente from './pages/Asistente.jsx';
 import Vacunas from './pages/Vacunas.jsx';
 import Consultas from './pages/Consultas.jsx';
 import ConsultaFormulario from './pages/ConsultaFormulario.jsx';
@@ -116,10 +117,8 @@ export default function App() {
         <Route path="/vacunas" element={<Vacunas />} />
         {/* Ep8: el chat es solo entre propietario y veterinario */}
         <Route path="/chat" element={soloPara(ROLES_CHAT, <Chat />)} />
-        <Route
-          path="/asistente"
-          element={<EnConstruccion titulo="Asistente IA" />}
-        />
+        {/* Ep6-Hu3: interfaz del asistente de inteligencia artificial */}
+        <Route path="/asistente" element={<Asistente />} />
         <Route path="/perfil" element={<MiPerfil />} />
         <Route path="/ayuda" element={<EnConstruccion titulo="Ayuda" />} />
         {/* Ep5-Hu1: notificaciones y recordatorios */}
