@@ -2,6 +2,7 @@ const { query, enTransaccion, construirInsert } = require('../utils/baseDatos');
 const { ErrorHttp, noEncontrado, sinPermiso } = require('../utils/errores');
 const { paginar, respuestaPaginada } = require('../utils/paginacion');
 const { obtenerMascotaAutorizada } = require('../utils/acceso');
+const { sinRomper, sincronizarRecordatorioCita, avisarCitaSolicitada } = require('../utils/notificaciones');
 
 // Las citas se agendan en hora de Colombia/Ecuador (UTC-5, sin horario de verano)
 const ZONA = 'America/Bogota';
@@ -98,6 +99,9 @@ async function crear(req, res) {
     );
     return (await cliente.query(text, values)).rows[0].id_cita;
   });
+
+  // Ep5-Hu1: si la pidió el propietario se avisa al veterinario; si ya nace confirmada se programa el recordatorio
+  await sinRomper(() => (req.usuario.rol === 'propietario' ? avisarCitaSolicitada(idCita) : sincronizarRecordatorioCita(idCita)));
 
   res.status(201).json(await buscarCita(idCita));
 }
@@ -197,6 +201,8 @@ async function cambiarEstado(req, res) {
     [estado, observaciones ?? null, cita.id_cita, cita.estado]
   );
   if (!rowCount) throw new ErrorHttp(409, 'La cita cambió de estado mientras la actualizaba; vuelva a consultarla');
+  // Ep5-Hu1: confirmar programa el recordatorio; cancelar o cambiar la cita retira el que estaba pendiente
+  await sinRomper(() => sincronizarRecordatorioCita(cita.id_cita));
   res.json(await buscarCita(cita.id_cita));
 }
 

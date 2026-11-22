@@ -29,7 +29,8 @@ DROP FUNCTION IF EXISTS fn_actualizar_fecha, fn_crear_perfil, fn_crear_historia,
 CREATE TYPE sexo_mascota        AS ENUM ('macho', 'hembra', 'desconocido');
 CREATE TYPE estado_cita         AS ENUM ('programada', 'confirmada', 'reprogramada', 'cancelada', 'atendida', 'no_asistio');
 CREATE TYPE estado_tratamiento  AS ENUM ('activo', 'finalizado', 'suspendido');
-CREATE TYPE tipo_recordatorio   AS ENUM ('cita', 'vacuna', 'tratamiento', 'seguimiento');
+-- 'aviso' = notificación inmediata (Ep5-Hu1), p. ej. «nueva cita solicitada»
+CREATE TYPE tipo_recordatorio   AS ENUM ('cita', 'vacuna', 'tratamiento', 'seguimiento', 'aviso');
 CREATE TYPE estado_recordatorio AS ENUM ('pendiente', 'enviado', 'fallido', 'cancelado');
 
 -- ---------------------------------------------------------------------
@@ -270,9 +271,20 @@ CREATE TABLE recordatorios (
   canal             VARCHAR(10) NOT NULL DEFAULT 'email' CHECK (canal IN ('email','push')),
   estado            estado_recordatorio NOT NULL DEFAULT 'pendiente',
   generado_por_ia   BOOLEAN NOT NULL DEFAULT FALSE,
-  fecha_registro    TIMESTAMPTZ NOT NULL DEFAULT now()
+  fecha_registro    TIMESTAMPTZ NOT NULL DEFAULT now(),
+  -- Ep5-Hu1: la tabla es también la bandeja de notificaciones (campana) y la cola de correos
+  titulo            VARCHAR(120),
+  enlace            VARCHAR(200),          -- a dónde lleva la notificación al tocarla
+  fecha_evento      TIMESTAMPTZ,           -- fecha de la cita / dosis recordada
+  leido             BOOLEAN NOT NULL DEFAULT FALSE,
+  fecha_lectura     TIMESTAMPTZ,
+  fecha_envio       TIMESTAMPTZ            -- cuándo se envió el correo
 );
 CREATE INDEX idx_recordatorios_pendientes ON recordatorios(fecha_programada) WHERE estado = 'pendiente';
+CREATE INDEX idx_recordatorios_usuario ON recordatorios(id_usuario, fecha_programada DESC);
+-- Un mismo recordatorio (usuario + tipo + referencia + fecha del evento) no se repite
+CREATE UNIQUE INDEX uq_recordatorios_evento ON recordatorios(id_usuario, tipo, id_referencia, fecha_evento)
+  WHERE fecha_evento IS NOT NULL AND estado <> 'cancelado';
 
 -- ---------------------------------------------------------------------
 --  Chat veterinario <-> propietario (Socket.IO)

@@ -12,6 +12,8 @@ const manejoErrores = require('./middleware/manejoErrores');
 const { historias, consultas, tratamientos, vacunas } = require('./routes/historias');
 const citasRoutes = require('./routes/citas');
 const conversacionesRoutes = require('./routes/conversaciones');
+const notificacionesRoutes = require('./routes/notificaciones');
+const { iniciarPlanificador } = require('./utils/planificador');
 const { iniciarChat } = require('./sockets/chat');
 
 const app = express();
@@ -46,6 +48,9 @@ app.use('/api/ia', iaRoutes);
 // Hu10: citas veterinarias
 app.use('/api/citas', citasRoutes);
 
+// Ep5-Hu1: notificaciones y recordatorios (campana)
+app.use('/api/notificaciones', notificacionesRoutes);
+
 // Ep8: chat propietario <-> veterinario (el tiempo real va por Socket.IO)
 app.use('/api/conversaciones', conversacionesRoutes);
 
@@ -65,6 +70,8 @@ if (require.main === module) {
     // Express y Socket.IO comparten el mismo servidor HTTP
     const servidor = http.createServer(app);
     iniciarChat(new Server(servidor));
+    // Envía los recordatorios cuando les llega la hora
+    iniciarPlanificador();
     servidor.listen(PORT, () => {
         console.log(`Servidor ejecutándose en http://localhost:${PORT}`);
     });

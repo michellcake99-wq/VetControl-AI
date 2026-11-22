@@ -268,3 +268,20 @@ Restricciones según el rol (Ep8-Hu5):
 - Solo los participantes de una conversación pueden leer y enviar mensajes en ella.
 - Los intentos no permitidos se rechazan con `403` (`estado: 403` en el socket) y el mensaje **no** se guarda.
 - El servidor de Socket.IO vuelve a validar el usuario (cuenta activa) y su rol en cada evento, no solo al conectarse.
+
+## Notificaciones y recordatorios (Ep5-Hu1)
+
+Todas las rutas exigen token; cada usuario solo ve y marca las suyas.
+
+| Método | Ruta | Descripción |
+|---|---|---|
+| GET | `/notificaciones?solo_no_leidas=true&pagina=&limite=` | Bandeja del usuario (más recientes primero). Una notificación aparece cuando llega su hora; las canceladas no se muestran |
+| GET | `/notificaciones/no-leidas` | `{ "no_leidas": 3 }` — número que muestra la campana |
+| PATCH | `/notificaciones/:id/leida` | Marca una como leída (`404` si no es del usuario) |
+| POST | `/notificaciones/marcar-leidas` | Marca todas como leídas |
+
+Cuándo se generan:
+
+- Cita **confirmada** → recordatorio al propietario 24 h antes (si falta menos, sale de inmediato). Si la cita se cancela o cambia de fecha, el recordatorio pendiente se cancela o se reprograma. No se crea dos veces el mismo recordatorio.
+- Cita **solicitada** por un propietario → aviso al veterinario.
+- Cada minuto el servidor envía por correo (Brevo) los recordatorios que ya llegaron a su hora. Variables del `.env`: `BREVO_API_KEY`, `CORREO_REMITENTE` y, opcional, `CORREO_NOMBRE`. Sin esas variables las notificaciones siguen apareciendo en la plataforma, pero no se envía correo.
