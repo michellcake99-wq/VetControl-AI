@@ -294,7 +294,7 @@ Todas las respuestas de error usan `{"mensaje": "..."}`, igual que el login exis
 | 404 | No existe |
 | 409 | Dato único repetido (correo, documento, microchip) o conflicto de estado |
 
-## Chat (Ep8-Hu1 y Ep8-Hu5)
+## Chat (Ep8-Hu1, Ep8-Hu4 y Ep8-Hu5)
 
 | Método | Ruta | Quién |
 |---|---|---|
@@ -312,6 +312,22 @@ Restricciones según el rol (Ep8-Hu5):
 - Solo los participantes de una conversación pueden leer y enviar mensajes en ella.
 - Los intentos no permitidos se rechazan con `403` (`estado: 403` en el socket) y el mensaje **no** se guarda.
 - El servidor de Socket.IO vuelve a validar el usuario (cuenta activa) y su rol en cada evento, no solo al conectarse.
+
+Estado de atención del veterinario (Ep8-Hu4):
+
+- `GET /conversaciones` (propietario) y `GET /conversaciones/veterinarios` agregan a cada veterinario `estado_atencion`: `{ id_veterinario, en_linea, en_horario, proxima_atencion, horario }`.
+  - `en_linea`: `true` mientras el veterinario tenga el chat abierto (en una o varias pestañas).
+  - `en_horario`: `true` / `false` según su horario de atención (tabla `horarios_veterinario`) a la hora actual de Colombia; `null` si no tiene horario registrado. La hora de fin no cuenta (atiende hasta justo antes).
+  - `proxima_atencion`: `{ dia_semana, hora_inicio, hoy }` cuando está fuera de horario (`null` si está en horario o no tiene horario).
+  - `horario`: sus franjas semanales `{ dia_semana, hora_inicio, hora_fin }`.
+  - El veterinario no recibe este campo en sus conversaciones.
+- Tiempo real (Socket.IO), solo para propietarios, únicamente sobre veterinarios con los que tienen una conversación:
+  - `estados_veterinarios` `[{ id_veterinario, en_linea }]` al conectarse.
+  - `estado_veterinario` `{ id_veterinario, en_linea }` cuando un veterinario se conecta (su primera pestaña) o se desconecta (la última).
+  - `horario_actualizado` `{ id_veterinario }` cuando el administrador crea, edita o borra un horario (`/veterinarios/:id/horarios`).
+  - El evento `seguir_veterinario` `{ id_veterinario }` empieza a recibir ese estado tras iniciar una conversación nueva; responde `{ estado: { id_veterinario, en_linea } }` o `{ error, estado: 403 | 400 }`.
+- Aviso fuera de horario: si un propietario envía un mensaje cuando el veterinario está fuera de su horario, el mensaje se guarda igual y la respuesta del evento `enviar_mensaje` trae además `aviso` (texto con el día y la hora en que vuelve a atender). Si está en horario, no tiene horario registrado o escribe el veterinario, no hay aviso.
+- La presencia se guarda en la memoria del servidor (un solo proceso): si se reinicia, los veterinarios aparecen fuera de línea hasta que vuelvan a conectarse.
 
 ## Notificaciones y recordatorios (Ep5-Hu1)
 

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { Fragment, useCallback, useEffect, useRef, useState } from 'react';
 import { ArrowLeft, MessageCircle, Plus, SendHorizontal } from 'lucide-react';
 import {
   chatApi,
@@ -6,6 +6,8 @@ import {
   obtenerToken,
   usuarioDelToken,
 } from '../api/chat.js';
+import { estadoHorario, textoProximaAtencion } from '../utils/atencion.js';
+import EstadoAtencion from '../components/EstadoAtencion.jsx';
 import './Chat.css';
 
 // Ep8-Hu1: envío de mensajes entre propietario y veterinario
@@ -43,6 +45,11 @@ function SalaChat({ token, yo }) {
   const [conexion, setConexion] = useState('conectando');
   const [error, setError] = useState('');
   const [nueva, setNueva] = useState(false);
+  // Ep8-Hu4: quién está en línea (llega por el socket) y la hora actual para el horario de atención
+  const [presencia, setPresencia] = useState({});
+  const [ahora, setAhora] = useState(() => new Date());
+  // Avisos de «fuera de horario» que se muestran justo después del mensaje enviado
+  const [avisos, setAvisos] = useState({});
 
   const socketRef = useRef(null);
   const finRef = useRef(null);
@@ -72,14 +79,34 @@ function SalaChat({ token, yo }) {
     const socket = conectarChat(token);
     socketRef.current = socket;
 
-    socket.on('connect', () => setConexion('conectado'));
+    socket.on('connect', () => {
+      setConexion('conectado');
+      // Al (re)conectar se pide todo de nuevo: pudo cambiar algo mientras no había conexión
+      setPresencia({});
+      cargarConversaciones();
+    });
     socket.on('disconnect', () => setConexion('conectando'));
+    // Ep8-Hu4: estado del veterinario en tiempo real
+    socket.on('estados_veterinarios', (lista) =>
+      setPresencia(
+        Object.fromEntries(lista.map((e) => [e.id_veterinario, e.en_linea]))
+      )
+    );
+    socket.on('estado_veterinario', ({ id_veterinario, en_linea }) =>
+      setPresencia((p) => ({ ...p, [id_veterinario]: en_linea }))
+    );
+    socket.on('horario_actualizado', () => cargarConversaciones());
     socket.on('connect_error', (e) => {
       if (!socket.active) setError(`${e.message}. Vuelve a iniciar sesión.`); // token inválido o vencido
     });
 
     return () => socket.disconnect();
   }, [token, cargarConversaciones]);
+  // El horario de atención se vuelve a evaluar cada 30 segundos (por si empieza o termina mientras tanto)
+  useEffect(() => {
+    const t = setInterval(() => setAhora(new Date()), 30000);
+    return () => clearInterval(t);
+  }, []);
   // Mantener visible el último mensaje
   useEffect(() => {
     finRef.current?.scrollIntoView({ block: 'end' });
@@ -95,6 +122,8 @@ function SalaChat({ token, yo }) {
         .emitWithAck('enviar_mensaje', { id_conversacion: activa, contenido });
       if (r.error) return setError(r.error);
       setMensajes((ms) => [...ms, r.mensaje]);
+      if (r.aviso)
+        setAvisos((a) => ({ ...a, [r.mensaje.id_mensaje]: r.aviso }));
       setConversaciones((cs) =>
         cs.map((c) =>
           c.id_conversacion === activa ? { ...c, ultimo_mensaje: r.mensaje } : c
@@ -109,6 +138,24 @@ function SalaChat({ token, yo }) {
 
   const conversacion = conversaciones.find((c) => c.id_conversacion === activa);
   const largo = texto.trim().length;
+
+  // Ep8-Hu4: estado de atención de cada veterinario (solo lo ve el propietario)
+  const estadoDe = (c) =>
+    c?.estado_atencion && {
+      ...c.estado_atencion,
+      en_linea: presencia[c.id_veterinario] ?? c.estado_atencion.en_linea,
+    };
+  const estadoActivo = estadoDe(conversacion);
+  const horarioActivo =
+    estadoActivo && estadoHorario(estadoActivo.horario, ahora);
+  const avisoHorario =
+    horarioActivo?.en_horario === false
+      ? `${conversacion.nombre_contacto} está fuera de su horario de atención. Puedes dejarle tu mensaje: te responderá cuando vuelva a atender${
+          horarioActivo.proxima_atencion
+            ? ` (${textoProximaAtencion(horarioActivo.proxima_atencion)})`
+            : ''
+        }.`
+      : '';
 
   return (
     <div className="chat">
@@ -144,6 +191,20 @@ function SalaChat({ token, yo }) {
             <NuevaConversacion
               onCreada={async (c) => {
                 setNueva(false);
+                // Ep8-Hu4: empieza a recibir el estado en línea de este veterinario
+                socketRef.current
+                  ?.timeout(3000)
+                  .emitWithAck('seguir_veterinario', {
+                    id_veterinario: c.id_veterinario,
+                  })
+                  .then((r) => {
+                    if (r.estado)
+                      setPresencia((p) => ({
+                        ...p,
+                        [r.estado.id_veterinario]: r.estado.en_linea,
+                      }));
+                  })
+                  .catch(() => {});
                 await cargarConversaciones();
                 abrir(c.id_conversacion);
               }}
@@ -170,6 +231,7 @@ function SalaChat({ token, yo }) {
                         {c.nombre_mascota}
                       </span>
                     )}
+                    <EstadoAtencion estado={estadoDe(c)} ahora={ahora} />
                     <span className="texto-sec chat__item-ultimo">
                       {c.ultimo_mensaje?.contenido ?? 'Sin mensajes'}
                     </span>
@@ -206,6 +268,11 @@ function SalaChat({ token, yo }) {
                       Sobre {conversacion.nombre_mascota}
                     </p>
                   )}
+                  <EstadoAtencion
+                    estado={estadoActivo}
+                    ahora={ahora}
+                    detallado
+                  />
                 </div>
               </div>
 
@@ -213,22 +280,34 @@ function SalaChat({ token, yo }) {
                 {mensajes.map((m) => {
                   const mio = m.id_remitente === yo.id_usuario;
                   return (
-                    <li
-                      key={m.id_mensaje}
-                      className={`chat__burbuja chat__burbuja--${mio ? 'enviado' : 'recibido'}`}
-                    >
-                      <span className="sr-only">
-                        {mio ? 'Tú:' : `${conversacion.nombre_contacto}:`}
-                      </span>
-                      <p>{m.contenido}</p>
-                      <time dateTime={m.fecha_envio}>
-                        {hora(m.fecha_envio)}
-                      </time>
-                    </li>
+                    <Fragment key={m.id_mensaje}>
+                      <li
+                        className={`chat__burbuja chat__burbuja--${mio ? 'enviado' : 'recibido'}`}
+                      >
+                        <span className="sr-only">
+                          {mio ? 'Tú:' : `${conversacion.nombre_contacto}:`}
+                        </span>
+                        <p>{m.contenido}</p>
+                        <time dateTime={m.fecha_envio}>
+                          {hora(m.fecha_envio)}
+                        </time>
+                      </li>
+                      {avisos[m.id_mensaje] && (
+                        <li className="chat__aviso-mensaje" role="status">
+                          {avisos[m.id_mensaje]}
+                        </li>
+                      )}
+                    </Fragment>
                   );
                 })}
                 <li ref={finRef} aria-hidden="true" />
               </ol>
+
+              {avisoHorario && (
+                <p className="chat__aviso-horario" role="status">
+                  {avisoHorario}
+                </p>
+              )}
 
               <form className="chat__form" onSubmit={enviar}>
                 <label htmlFor="chat-texto" className="sr-only">
@@ -306,6 +385,7 @@ function NuevaConversacion({ onCreada, onError }) {
           {veterinarios.map((v) => (
             <option key={v.id_veterinario} value={v.id_veterinario}>
               {v.nombre} {v.apellido}
+              {v.estado_atencion?.en_linea ? ' · en línea' : ''}
             </option>
           ))}
         </select>
