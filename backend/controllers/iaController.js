@@ -17,8 +17,8 @@ Respondes en español, de forma clara, breve y amable.
   ni indiques dosis de medicamentos. Ante síntomas graves o una emergencia, recomienda acudir a la clínica.
 - Si te preguntan algo que no tiene que ver con mascotas, explica con amabilidad que no puedes ayudar con eso.`;
 
-/** Revisa cuántas consultas hizo el usuario en la ventana de tiempo y corta si pasó el límite. */
-async function verificarLimite(idUsuario) {
+/** Cuántas consultas hizo el usuario en la ventana de tiempo y cuándo se libera la próxima. */
+async function estadoCupo(idUsuario) {
     const { consultas, minutos } = limite();
     const { rows } = await query(
         `SELECT count(*)::int AS usadas, min(fecha) AS primera
@@ -27,13 +27,20 @@ async function verificarLimite(idUsuario) {
         [idUsuario, minutos]
     );
     const { usadas, primera } = rows[0];
-    if (usadas >= consultas) {
-        // Se libera un cupo cuando la consulta más antigua sale de la ventana
-        const esperaMin = Math.max(1, Math.ceil((new Date(primera).getTime() + minutos * 60000 - Date.now()) / 60000));
+    // Se libera un cupo cuando la consulta más antigua sale de la ventana
+    const esperaMin = usadas === 0 ? 0
+        : Math.max(1, Math.ceil((new Date(primera).getTime() + minutos * 60000 - Date.now()) / 60000));
+    return { consultas, minutos, usadas, restantes: Math.max(consultas - usadas, 0), esperaMin };
+}
+
+/** Revisa el límite de consultas del usuario y corta si ya lo pasó. Devuelve cuántas le quedaban. */
+async function verificarLimite(idUsuario) {
+    const { consultas, minutos, restantes, esperaMin } = await estadoCupo(idUsuario);
+    if (restantes === 0) {
         throw new ErrorHttp(429, `Alcanzaste el límite de ${consultas} consultas al asistente cada ${minutos} minutos. `
             + `Podrás consultar de nuevo en ${esperaMin} ${esperaMin === 1 ? 'minuto' : 'minutos'}.`);
     }
-    return consultas - usadas;
+    return restantes;
 }
 
 /** Resume los datos de una mascota para darle contexto a la IA (solo de esa mascota). */
@@ -114,6 +121,18 @@ async function ejecutarIA({ usuario, mascota, mensajes, pregunta, restantes }) {
     }
 }
 
+// Ep6-Hu3: aviso que acompaña cada respuesta del asistente
+const AVISO_CONSULTA = 'Respuesta generada por inteligencia artificial. Es un apoyo y no reemplaza el criterio del veterinario.';
+
+// GET /api/ia/cupo — cuántas consultas le quedan al usuario (para mostrarlo en la pantalla del asistente)
+async function cupo(req, res) {
+    const { consultas, minutos, usadas, restantes, esperaMin } = await estadoCupo(req.usuario.id_usuario);
+    res.json({
+        limite: consultas, ventana_minutos: minutos, usadas, restantes,
+        minutos_para_nueva: restantes === 0 ? esperaMin : null,
+    });
+}
+
 // POST /api/ia/consultar   { pregunta, id_mascota? }
 async function consultar(req, res) {
     const { pregunta, id_mascota: idMascota } = req.body;
@@ -127,7 +146,8 @@ async function consultar(req, res) {
     if (mascota) mensajes.push({ role: 'system', content: await contextoMascota(mascota) });
     mensajes.push({ role: 'user', content: pregunta });
 
-    res.json(await ejecutarIA({ usuario, mascota, mensajes, pregunta, restantes }));
+    const resultado = await ejecutarIA({ usuario, mascota, mensajes, pregunta, restantes });
+    res.json({ ...resultado, aviso: AVISO_CONSULTA });
 }
 
 // Ep6-Hu2: resumen de la historia clínica
@@ -161,4 +181,4 @@ async function resumirHistorial(req, res) {
     res.json({ ...resultado, aviso: AVISO_RESUMEN });
 }
 
-module.exports = { consultar, resumirHistorial };
+module.exports = { consultar, resumirHistorial, cupo };

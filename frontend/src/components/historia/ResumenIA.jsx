@@ -25,7 +25,7 @@ function separarSecciones(texto) {
  * Muestra el aviso de que lo generó una IA, un indicador de carga, el error con «Reintentar»
  * y un botón para copiar el texto.
  */
-export default function ResumenIA({ idMascota, nombreMascota }) {
+export default function ResumenIA({ idMascota, nombreMascota, onResumen }) {
   const [estado, setEstado] = useState('inicial'); // inicial | cargando | listo | error
   const [resumen, setResumen] = useState(null);
   const [error, setError] = useState('');
@@ -36,13 +36,16 @@ export default function ResumenIA({ idMascota, nombreMascota }) {
     setError('');
     setCopiado(false);
     try {
-      setResumen(
-        await api.post('/ia/resumir-historial', { id_mascota: idMascota })
-      );
+      const datos = await api.post('/ia/resumir-historial', {
+        id_mascota: idMascota,
+      });
+      setResumen(datos);
       setEstado('listo');
+      onResumen?.(datos); // Ep6-Hu3: la pantalla del asistente actualiza las consultas restantes
     } catch (err) {
       setError(err.message || 'No se pudo generar el resumen.');
       setEstado('error');
+      onResumen?.(null);
     }
   }
 
