@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
-import { CircleAlert, LoaderCircle } from 'lucide-react';
+import { CircleAlert, LoaderCircle, Lock } from 'lucide-react';
 import AuthLayout from '../components/AuthLayout.jsx';
 import CampoTexto from '../components/CampoTexto.jsx';
 import CargandoInline from '../components/CargandoInline.jsx';
@@ -110,6 +110,7 @@ export default function RestablecerContrasena() {
             <CampoTexto
               id="contrasena"
               etiqueta="Contraseña nueva"
+              icono={Lock}
               tipo="password"
               autoComplete="new-password"
               ayuda="Mínimo 8 caracteres."
@@ -120,6 +121,7 @@ export default function RestablecerContrasena() {
             <CampoTexto
               id="confirmacion"
               etiqueta="Confirmar contraseña"
+              icono={Lock}
               tipo="password"
               autoComplete="new-password"
               value={datos.confirmacion}

@@ -4,6 +4,7 @@ import { PawPrint } from 'lucide-react';
 import Navbar from '../components/publica/Navbar.jsx';
 import Footer from '../components/publica/Footer.jsx';
 import Demo from '../components/publica/Demo.jsx';
+import useRevelar from '../components/publica/useRevelar.js';
 import {
   estadisticas,
   pilares,
@@ -12,42 +13,59 @@ import {
 } from '../data/paginaPublica.js';
 import '../estilos/paginaPublica.css';
 
-// Foto de Unsplash (licencia libre: Sander Mathlener, unsplash.com/photos/1Vw3xTj9UyE).
-// Si no carga (sin internet), se muestra una huella como respaldo.
+// Foto de Unsplash (licencia libre). Se muestra COMPLETA, sin recortes (object-fit: contain);
+// una copia desenfocada de la misma foto rellena el resto del fondo.
+// Para usar otra imagen basta con cambiar esta dirección (o agregar más: se prueban en orden).
+// Si ninguna carga (sin internet), queda el degradado de la sección y una huella.
 const FOTOS_HERO = [
-  'https://images.unsplash.com/photo-1601543574606-1d8a714787f9?w=1120&q=80&auto=format&fit=crop',
+  'https://images.unsplash.com/photo-1623387641168-d9803ddd3f35?q=80&w=2000&auto=format&fit=crop',
 ];
 
-function FotoHero() {
+function FondoHero() {
   const [intento, setIntento] = useState(0);
-  if (intento >= FOTOS_HERO.length) {
-    return (
-      <div className="lp-hero__foto lp-hero__foto--vacia" aria-hidden="true">
-        <PawPrint size={96} />
-      </div>
-    );
-  }
+  const sinFoto = intento >= FOTOS_HERO.length;
   return (
-    <img
-      className="lp-hero__foto"
-      src={FOTOS_HERO[intento]}
-      alt="Perro golden retriever descansando al aire libre"
-      onError={() => setIntento((i) => i + 1)}
-    />
+    <div className="lp-hero__fondo" aria-hidden="true">
+      {sinFoto ? (
+        <PawPrint className="lp-hero__huella" size={220} strokeWidth={1.2} />
+      ) : (
+        <>
+          <img
+            className="lp-hero__foto-difusa"
+            src={FOTOS_HERO[intento]}
+            alt=""
+          />
+          <img
+            className="lp-hero__foto"
+            src={FOTOS_HERO[intento]}
+            alt=""
+            onError={() => setIntento((i) => i + 1)}
+          />
+        </>
+      )}
+      {/* Velo claro a la izquierda para que el texto se lea sobre la foto */}
+      <div className="lp-hero__velo" />
+    </div>
   );
 }
 
+// Atributos para que una tarjeta aparezca animada, una tras otra (efecto escalonado)
+const revelar = (i = 0) => ({ 'data-revelar': '', style: { '--i': i } });
+
 export default function PaginaPublica() {
+  const animar = useRevelar();
+
   useEffect(() => {
     document.title = 'VetControl AI · Gestión veterinaria inteligente';
   }, []);
 
   return (
-    <div className="lp">
+    <div className={`lp${animar ? ' lp--anim' : ''}`}>
       <Navbar />
 
       <main>
         <section className="lp-hero" id="inicio">
+          <FondoHero />
           <div className="lp-hero__texto">
             <span className="lp-pill">
               <i aria-hidden="true" />
@@ -82,11 +100,13 @@ export default function PaginaPublica() {
               ))}
             </dl>
           </div>
-          <FotoHero />
         </section>
 
         <section className="lp-sobre" id="sobre">
-          <header className="lp-encabezado lp-encabezado--centro">
+          <header
+            className="lp-encabezado lp-encabezado--centro"
+            {...revelar()}
+          >
             <p className="lp-eyebrow">PROPUESTA DE SOLUCIÓN TECNOLÓGICA</p>
             <h2>Transformando la Gestión Veterinaria Tradicional</h2>
             <p>
@@ -98,8 +118,12 @@ export default function PaginaPublica() {
           </header>
 
           <div className="lp-grid lp-grid--3">
-            {pilares.map(({ icono: Icono, titulo, texto }) => (
-              <article key={titulo} className="lp-card lp-card--suave">
+            {pilares.map(({ icono: Icono, titulo, texto }, i) => (
+              <article
+                key={titulo}
+                className="lp-card lp-card--suave"
+                {...revelar(i)}
+              >
                 <span className="lp-icono lp-icono--grande">
                   <Icono size={22} aria-hidden="true" />
                 </span>
@@ -110,10 +134,16 @@ export default function PaginaPublica() {
           </div>
 
           <div className="lp-publico">
-            <p className="lp-publico__titulo">¿Para quién es VetControl AI?</p>
+            <p className="lp-publico__titulo" {...revelar()}>
+              ¿Para quién es VetControl AI?
+            </p>
             <div className="lp-grid lp-grid--2">
-              {publico.map(({ icono: Icono, titulo, texto }) => (
-                <div key={titulo} className="lp-publico__item">
+              {publico.map(({ icono: Icono, titulo, texto }, i) => (
+                <div
+                  key={titulo}
+                  className="lp-publico__item"
+                  {...revelar(i)}
+                >
                   <span className="lp-icono">
                     <Icono size={20} aria-hidden="true" />
                   </span>
@@ -128,7 +158,7 @@ export default function PaginaPublica() {
         </section>
 
         <section className="lp-func" id="funcionalidades">
-          <header className="lp-func__encabezado">
+          <header className="lp-func__encabezado" {...revelar()}>
             <div className="lp-encabezado">
               <p className="lp-eyebrow lp-eyebrow--oscuro">
                 MÓDULOS DEL SISTEMA
@@ -144,8 +174,12 @@ export default function PaginaPublica() {
 
           <div className="lp-grid lp-grid--3">
             {funcionalidades.map(
-              ({ icono: Icono, etiqueta, titulo, texto }) => (
-                <article key={titulo} className="lp-card">
+              ({ icono: Icono, etiqueta, titulo, texto }, i) => (
+                <article
+                  key={titulo}
+                  className="lp-card"
+                  {...revelar(i % 3)}
+                >
                   <div className="lp-card__top">
                     <span className="lp-icono">
                       <Icono size={20} aria-hidden="true" />
@@ -161,7 +195,10 @@ export default function PaginaPublica() {
         </section>
 
         <section className="lp-demo" id="demo">
-          <header className="lp-encabezado lp-encabezado--centro">
+          <header
+            className="lp-encabezado lp-encabezado--centro"
+            {...revelar()}
+          >
             <p className="lp-eyebrow lp-eyebrow--acento">DEMO INTERACTIVA</p>
             <h2>Explora la plataforma en acción</h2>
             <p>

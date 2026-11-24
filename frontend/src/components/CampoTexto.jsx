@@ -2,12 +2,14 @@ import { useState } from 'react';
 import { Eye, EyeOff } from 'lucide-react';
 
 // Campo con etiqueta, ayuda y mensaje de error. Con tipo "password" agrega el botón de mostrar/ocultar.
+// `icono` (opcional): ícono de lucide que se muestra a la izquierda dentro del campo.
 export default function CampoTexto({
   id,
   etiqueta,
   error,
   ayuda,
   tipo = 'text',
+  icono: Icono,
   ...resto
 }) {
   const [visible, setVisible] = useState(false);
@@ -21,7 +23,15 @@ export default function CampoTexto({
       <label htmlFor={id} className="campo__etiqueta">
         {etiqueta}
       </label>
-      <div className="campo__control">
+      <div className={`campo__control${Icono ? ' campo__control--icono' : ''}`}>
+        {Icono && (
+          <Icono
+            className="campo__icono"
+            size={20}
+            strokeWidth={1.8}
+            aria-hidden="true"
+          />
+        )}
         <input
           id={id}
           name={id}

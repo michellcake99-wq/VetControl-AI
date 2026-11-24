@@ -1,6 +1,15 @@
 import { useRef, useState } from 'react';
 import { Link, Navigate, useNavigate } from 'react-router-dom';
-import { CircleAlert, LoaderCircle, PawPrint, Stethoscope } from 'lucide-react';
+import {
+  CircleAlert,
+  LoaderCircle,
+  LogIn,
+  Lock,
+  Mail,
+  PawPrint,
+  Stethoscope,
+  User,
+} from 'lucide-react';
 import AuthLayout from '../components/AuthLayout.jsx';
 import CampoTexto from '../components/CampoTexto.jsx';
 import { ErrorApi, registrarUsuario } from '../services/api.js';
@@ -120,6 +129,8 @@ export default function Registro() {
           <CampoTexto
             id="nombre"
             etiqueta="Nombre"
+            icono={User}
+            placeholder="Tu nombre"
             autoComplete="given-name"
             value={datos.nombre}
             onChange={cambiar}
@@ -128,6 +139,8 @@ export default function Registro() {
           <CampoTexto
             id="apellido"
             etiqueta="Apellido"
+            icono={User}
+            placeholder="Tu apellido"
             autoComplete="family-name"
             value={datos.apellido}
             onChange={cambiar}
@@ -137,6 +150,7 @@ export default function Registro() {
         <CampoTexto
           id="correo"
           etiqueta="Correo electrónico"
+          icono={Mail}
           tipo="email"
           autoComplete="email"
           placeholder="nombre@correo.com"
@@ -147,9 +161,10 @@ export default function Registro() {
         <CampoTexto
           id="contrasena"
           etiqueta="Contraseña"
+          icono={Lock}
           tipo="password"
           autoComplete="new-password"
-          ayuda="Mínimo 8 caracteres."
+          placeholder="Mínimo 8 caracteres."
           value={datos.contrasena}
           onChange={cambiar}
           error={errores.contrasena}
@@ -195,7 +210,9 @@ export default function Registro() {
               Creando cuenta…
             </>
           ) : (
-            'Crear cuenta'
+            <>
+              <LogIn size={20} aria-hidden="true" /> Crear cuenta
+            </>
           )}
         </button>
       </form>

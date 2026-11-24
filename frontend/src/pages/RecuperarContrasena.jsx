@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { CircleAlert, CircleCheck, LoaderCircle } from 'lucide-react';
+import { CircleAlert, CircleCheck, LoaderCircle, Mail } from 'lucide-react';
 import AuthLayout from '../components/AuthLayout.jsx';
 import CampoTexto from '../components/CampoTexto.jsx';
 import { solicitarRecuperacion } from '../services/api.js';
@@ -70,6 +70,7 @@ export default function RecuperarContrasena() {
             <CampoTexto
               id="correo"
               etiqueta="Correo electrónico"
+              icono={Mail}
               tipo="email"
               autoComplete="email"
               placeholder="nombre@correo.com"
