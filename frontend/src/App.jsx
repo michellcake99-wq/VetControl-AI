@@ -117,7 +117,7 @@ export default function App() {
         <Route path="/vacunas" element={<Vacunas />} />
         {/* Ep8: el chat es solo entre propietario y veterinario */}
         <Route path="/chat" element={soloPara(ROLES_CHAT, <Chat />)} />
-        {/* Ep6-Hu3: interfaz del asistente de inteligencia artificial */}
+        {/* Ep6-Hu5: interfaz del asistente de inteligencia artificial */}
         <Route path="/asistente" element={<Asistente />} />
         <Route path="/perfil" element={<MiPerfil />} />
         <Route path="/ayuda" element={<EnConstruccion titulo="Ayuda" />} />

@@ -8,7 +8,7 @@ import CargandoInline from '../components/CargandoInline.jsx';
 import ResumenIA from '../components/historia/ResumenIA.jsx';
 import './Asistente.css';
 
-// Ep6-Hu3: interfaz de consulta del asistente de inteligencia artificial
+// Ep6-Hu5: interfaz de consulta del asistente de inteligencia artificial
 const MAX_CARACTERES = 2000;
 const MIN_CARACTERES = 3;
 const AVISO_IA =

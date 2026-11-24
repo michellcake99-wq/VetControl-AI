@@ -41,7 +41,7 @@ export default function ResumenIA({ idMascota, nombreMascota, onResumen }) {
       });
       setResumen(datos);
       setEstado('listo');
-      onResumen?.(datos); // Ep6-Hu3: la pantalla del asistente actualiza las consultas restantes
+      onResumen?.(datos); // Ep6-Hu5: la pantalla del asistente actualiza las consultas restantes
     } catch (err) {
       setError(err.message || 'No se pudo generar el resumen.');
       setEstado('error');
