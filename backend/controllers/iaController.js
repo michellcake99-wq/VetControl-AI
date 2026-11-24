@@ -121,7 +121,7 @@ async function ejecutarIA({ usuario, mascota, mensajes, pregunta, restantes }) {
     }
 }
 
-// Ep6-Hu3: aviso que acompaña cada respuesta del asistente
+// Ep6-Hu5: aviso que acompaña cada respuesta del asistente
 const AVISO_CONSULTA = 'Respuesta generada por inteligencia artificial. Es un apoyo y no reemplaza el criterio del veterinario.';
 
 // GET /api/ia/cupo — cuántas consultas le quedan al usuario (para mostrarlo en la pantalla del asistente)

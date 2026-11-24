@@ -1,4 +1,4 @@
-// Ep6-Hu3: pantalla del asistente de IA — consultas restantes y aviso en cada respuesta
+// Ep6-Hu5: pantalla del asistente de IA — consultas restantes y aviso en cada respuesta
 const { pool, request, app, reiniciarBase, iniciarSesion, api } = require('./helpers');
 
 let ana, carlos, marta;
