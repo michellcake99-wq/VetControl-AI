@@ -254,13 +254,13 @@ Reúne en una sola lista las consultas, los tratamientos y las vacunas de la mas
 
 Respuesta: `{ mascota: { id_mascota, nombre, especie }, resumen: { consulta, tratamiento, vacuna }, datos: [...], meta }`. `resumen` cuenta los registros del rango de fechas sin importar el `tipo`, para mostrar cuántos hay de cada uno. Cada elemento de `datos` trae `tipo`, `id`, `fecha`, `momento`, `titulo`, `detalle`, `estado` (solo tratamientos), `id_consulta` y `extra` con los datos propios de su tipo (veterinario, laboratorio, lote, próxima dosis, fecha de fin, etc.). Si la mascota no tiene registros (o ninguno cumple los filtros), `datos` llega vacío y la pantalla muestra el mensaje correspondiente. Una mascota de otro propietario responde 403. No hay rutas para crear, modificar ni borrar desde el historial.
 
-## Asistente de IA (Ep6-Hu1, Ep6-Hu2 y Ep6-Hu3)
+## Asistente de IA (Ep6-Hu1, Ep6-Hu2 y Ep6-Hu5)
 
 | Método | Ruta | Quién |
 |---|---|---|
 | POST | `/ia/resumir-historial` | todos (con token) — `{ "id_mascota": 1 }`; el propietario solo para sus mascotas. Resume antecedentes, diagnósticos recientes, tratamientos activos y vacunas usando solo los datos de esa mascota. Responde `{ respuesta, aviso, modelo, fecha, consultas_restantes }`; `aviso` es el texto que indica que lo generó una IA. Cuenta para el límite de consultas y queda en `interacciones_ia` (Ep6-Hu2) |
 | POST | `/ia/consultar` | todos (con token). Con `id_mascota`, el propietario solo puede preguntar por las suyas |
-| GET | `/ia/cupo` | todos (con token) — consultas que le quedan al usuario: `{ limite, ventana_minutos, usadas, restantes, minutos_para_nueva }`; `minutos_para_nueva` solo trae valor cuando `restantes` es 0 (Ep6-Hu3) |
+| GET | `/ia/cupo` | todos (con token) — consultas que le quedan al usuario: `{ limite, ventana_minutos, usadas, restantes, minutos_para_nueva }`; `minutos_para_nueva` solo trae valor cuando `restantes` es 0 (Ep6-Hu5) |
 
 ```json
 POST /api/ia/consultar
@@ -277,7 +277,7 @@ POST /api/ia/consultar
 }
 ```
 
-- `aviso` (Ep6-Hu3) es el texto que la pantalla muestra bajo cada respuesta para indicar que la generó una IA.
+- `aviso` (Ep6-Hu5) es el texto que la pantalla muestra bajo cada respuesta para indicar que la generó una IA.
 - `id_mascota` es opcional. Si se envía, la IA recibe como contexto **solo** los datos de esa mascota (antecedentes, últimas consultas, tratamientos activos y vacunas).
 - Cada consulta, exitosa o fallida, se guarda en la tabla `interacciones_ia` (usuario, mascota, pregunta, respuesta, modelo, fecha y error si lo hubo).
 - **Límite por usuario:** `IA_LIMITE_CONSULTAS` consultas cada `IA_VENTANA_MINUTOS` minutos (por defecto 20 cada 60). Al pasarlo responde `429` indicando cuánto falta para volver a consultar. Cuentan todas las consultas, también el resumen de la historia y las que fallan; `GET /ia/cupo` permite mostrar cuántas quedan.
@@ -351,6 +351,6 @@ Cuándo se generan:
 - Tratamiento **activo** (Ep5-Hu3) → recordatorio al propietario en cada dosis, con mascota, medicamento, dosis y hora. Las dosis se cuentan desde las 8:00 a. m. del día de inicio según la frecuencia escrita («cada 8 horas», «3 veces al día», «diaria», «cada 2 días», «semanal»; si no se entiende se recuerda una vez al día). Solo se avisa la dosis más reciente y nunca dos veces la misma. No se generan recordatorios si el tratamiento está finalizado o suspendido (`PUT /tratamientos/:id` cancela los pendientes), si aún no empieza o si `fecha_fin` ya pasó.
 - Cada minuto el servidor envía por correo (Brevo) los recordatorios que ya llegaron a su hora. Variables del `.env`: `BREVO_API_KEY`, `CORREO_REMITENTE` y, opcional, `CORREO_NOMBRE`. Sin esas variables las notificaciones siguen apareciendo en la plataforma, pero no se envía correo.
 
-## Pantalla del asistente de IA (Ep6-Hu3)
+## Pantalla del asistente de IA (Ep6-Hu5)
 
 La opción «Asistente IA» del menú (`/asistente`) abre una conversación con el asistente: se elige una mascota (o «Pregunta general»), se escribe la pregunta (3 a 2000 caracteres; Enter envía y Shift+Enter hace un salto de línea) o se toca una sugerencia. Mientras responde se muestra un indicador de «escribiendo», cada respuesta lleva el aviso de que la generó una IA, se muestran las consultas que le quedan al usuario y, si falla, la pregunta se conserva con un botón «Reintentar». El botón «Resumir historial» usa `/ia/resumir-historial`. Usa `/ia/consultar`, `/ia/resumir-historial` y `/ia/cupo`; la conversación vive solo en la pantalla (no se guarda entre sesiones) y cada pregunta se responde de forma independiente: el asistente no recuerda las preguntas anteriores.
