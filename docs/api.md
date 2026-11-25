@@ -254,6 +254,18 @@ Reúne en una sola lista las consultas, los tratamientos y las vacunas de la mas
 
 Respuesta: `{ mascota: { id_mascota, nombre, especie }, resumen: { consulta, tratamiento, vacuna }, datos: [...], meta }`. `resumen` cuenta los registros del rango de fechas sin importar el `tipo`, para mostrar cuántos hay de cada uno. Cada elemento de `datos` trae `tipo`, `id`, `fecha`, `momento`, `titulo`, `detalle`, `estado` (solo tratamientos), `id_consulta` y `extra` con los datos propios de su tipo (veterinario, laboratorio, lote, próxima dosis, fecha de fin, etc.). Si la mascota no tiene registros (o ninguno cumple los filtros), `datos` llega vacío y la pantalla muestra el mensaje correspondiente. Una mascota de otro propietario responde 403. No hay rutas para crear, modificar ni borrar desde el historial.
 
+## Seguimiento de la evolución de la mascota (Ep4-Hu3)
+
+| Método | Ruta | Quién |
+|---|---|---|
+| GET | `/mascotas/:id/seguimiento` | todos (el propietario solo el de sus mascotas) |
+| POST | `/mascotas/:id/seguimiento` | veterinario, administrador o el propietario de la mascota — `{ "peso_kg": 28.5, "fecha": "2026-11-20", "observaciones": "..." }` |
+
+- `peso_kg` es obligatorio, numérico y mayor que cero (máximo 2000). `fecha` es opcional (`AAAA-MM-DD`, por defecto hoy) y no puede ser futura. `observaciones` es opcional (máximo 1000 caracteres). Si algo no cumple, responde 400 con `detalles` indicando el campo.
+- El `GET` responde `{ mascota: { id_mascota, nombre, especie, peso_kg }, datos: [...] }` con los registros del más reciente al más antiguo. Cada uno trae `id_seguimiento`, `fecha`, `peso_kg`, `observaciones`, `id_usuario`, `registrado_por` y `rol_registrador` (`veterinario`, `propietario` o `administrador`), para saber quién lo registró. Una mascota sin registros devuelve `datos: []`.
+- El `POST` responde 201 con el registro creado. El peso actual de la mascota (`mascotas.peso_kg`) pasa a ser el del registro con la fecha más reciente; un registro de una fecha anterior no lo cambia.
+- Una mascota de otro propietario responde 403 y una inexistente, 404. Tabla `seguimiento_peso` (migración `010`).
+
 ## Asistente de IA (Ep6-Hu1, Ep6-Hu2 y Ep6-Hu5)
 
 | Método | Ruta | Quién |

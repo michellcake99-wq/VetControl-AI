@@ -1,0 +1,115 @@
+/* Ep4-Hu3: seguimiento de la evolución de la mascota. Usa los tokens de index.css */
+.seguimiento {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.seguimiento__resumen {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+}
+.seguimiento__dato {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 16px 18px;
+}
+.seguimiento__dato svg {
+  color: var(--c-chevron);
+}
+.seguimiento__dato strong {
+  font-size: 22px;
+}
+.seguimiento__cambio--sube {
+  color: #8a5a00;
+}
+.seguimiento__cambio--baja {
+  color: #1f6f8b;
+}
+.seguimiento__bloque {
+  padding: 20px 22px;
+}
+.seguimiento__vacio {
+  padding: 24px 0;
+}
+
+/* Gráfica de línea */
+.grafica-peso {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-height: 300px;
+}
+.grafica-peso__guia {
+  stroke: var(--c-borde);
+  stroke-width: 1;
+}
+.grafica-peso__eje {
+  font-size: 11px;
+  fill: var(--c-texto-sec);
+}
+.grafica-peso__linea {
+  stroke: var(--c-primario-activo);
+  stroke-width: 2.5;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+.grafica-peso__punto {
+  fill: var(--c-blanco);
+  stroke: var(--c-primario-activo);
+  stroke-width: 2.5;
+}
+
+/* Formulario */
+.seguimiento__form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-top: 12px;
+}
+.seguimiento__campos {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+.seguimiento__ancho {
+  grid-column: 1 / -1;
+}
+
+/* Lista de registros */
+.seguimiento__lista {
+  list-style: none;
+  padding: 0;
+  margin: 12px 0 0;
+  display: flex;
+  flex-direction: column;
+}
+.seguimiento__item {
+  padding: 12px 0;
+  border-bottom: 1px solid var(--c-borde);
+}
+.seguimiento__item:last-child {
+  border-bottom: 0;
+}
+.seguimiento__item-cabecera {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+}
+.seguimiento__obs {
+  margin: 6px 0 0;
+  white-space: pre-line;
+}
+.seguimiento__autor {
+  margin: 4px 0 0;
+  font-size: 12px;
+}
+
+@media (max-width: 640px) {
+  .seguimiento__resumen,
+  .seguimiento__campos {
+    grid-template-columns: 1fr;
+  }
+}

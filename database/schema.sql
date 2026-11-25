@@ -16,7 +16,7 @@
 BEGIN;
 
 DROP TABLE IF EXISTS tokens_recuperacion, intentos_login, interacciones_ia, auditoria, horarios_veterinario, mensajes, conversaciones, recordatorios,
-  evoluciones_tratamiento, tratamientos, vacunas, catalogo_vacunas, consultas, historias_clinicas, citas, mascotas,
+  seguimiento_peso, evoluciones_tratamiento, tratamientos, vacunas, catalogo_vacunas, consultas, historias_clinicas, citas, mascotas,
   veterinarios, propietarios, usuarios, roles CASCADE;
 DROP TYPE IF EXISTS sexo_mascota, estado_cita, estado_tratamiento,
   tipo_recordatorio, estado_recordatorio CASCADE;
@@ -256,6 +256,19 @@ CREATE TABLE vacunas (
 );
 CREATE INDEX idx_vacunas_historia      ON vacunas(id_historia);
 CREATE INDEX idx_vacunas_proxima_dosis ON vacunas(proxima_dosis);
+
+-- Ep4-Hu3: seguimiento de la evolución de la mascota. Peso (kg), fecha y observaciones a lo largo
+-- del tiempo; lo registran el veterinario y el propietario, y queda guardado quién lo hizo.
+CREATE TABLE seguimiento_peso (
+  id_seguimiento  SERIAL PRIMARY KEY,
+  id_mascota      INT NOT NULL REFERENCES mascotas(id_mascota) ON DELETE CASCADE,
+  id_usuario      INT NOT NULL REFERENCES usuarios(id_usuario) ON DELETE RESTRICT,  -- quién lo registró
+  fecha           DATE NOT NULL DEFAULT CURRENT_DATE CHECK (fecha <= CURRENT_DATE),
+  peso_kg         NUMERIC(6,2) NOT NULL CHECK (peso_kg > 0),
+  observaciones   TEXT,
+  fecha_registro  TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX idx_seguimiento_peso_mascota ON seguimiento_peso (id_mascota, fecha DESC);
 
 -- Ep7-Hu4: recuperación de contraseña. Solo se guarda el hash (SHA-256) del token de un solo uso (vale 1 hora)
 CREATE TABLE tokens_recuperacion (

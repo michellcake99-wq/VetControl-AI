@@ -6,6 +6,7 @@ const esquemas = require('../validators/esquemas');
 const c = require('../controllers/mascotasController');
 const h = require('../controllers/historiasController');
 const cm = require('../controllers/consultasMascotaController');
+const sg = require('../controllers/seguimientoController');
 
 const router = express.Router();
 const id = validar(esquemas.parametroId, 'params');
@@ -31,5 +32,10 @@ router.get('/:id/tratamientos', id, cm.listarTratamientos);
 
 // Ep4-Hu2: historial médico cronológico (consultas, tratamientos y vacunas; solo lectura)
 router.get('/:id/historial', id, cm.historial);
+
+// Ep4-Hu3: seguimiento de la evolución (peso y observaciones). Lo ven y lo registran el personal
+// y el propietario de la mascota; queda guardado quién lo registró.
+router.get('/:id/seguimiento', id, sg.listar);
+router.post('/:id/seguimiento', id, validar(esquemas.seguimientoCrear), sg.registrar);
 
 module.exports = router;

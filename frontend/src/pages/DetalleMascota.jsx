@@ -7,6 +7,7 @@ import {
   IdCard,
   Pencil,
   Phone,
+  Scale,
   User,
 } from 'lucide-react';
 import { api } from '../services/api.js';
@@ -137,6 +138,13 @@ export default function DetalleMascota() {
           >
             <IdCard size={15} />
             Carné de vacunación
+          </Link>
+          <Link
+            to={`/mascotas/${id}/seguimiento`}
+            className="boton boton--claro boton--peq"
+          >
+            <Scale size={15} />
+            Seguimiento
           </Link>
           {rol === 'veterinario' && (
             <Link
