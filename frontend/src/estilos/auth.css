@@ -1,111 +1,246 @@
 /* Pantallas de registro e inicio de sesión (Ep3-Hu15).
-   Usa los tokens definidos en index.css (paleta del prototipo de Figma). */
+
+  Diseño: dos mitades iguales. Panel de marca teal con la foto a la izquierda, tarjeta de formulario sobre fondo claro a la derecha.
+  Usa los tokens definidos en index.css (paleta del prototipo de Figma). */
 
 .auth {
-  min-height: 100vh;
+  --a-oscuro: #0a4d61;
+  --a-cian: #2fd0dc;
+  --a-claro: #e8f7fb;
+  --a-borde: #cfe5ec;
+
+  position: relative;
+  isolation: isolate;
+  height: 100vh;
+  height: 100dvh;
+  min-height: 540px;
   display: grid;
-  grid-template-columns: minmax(340px, 5fr) 6fr;
-  background: var(--c-fondo);
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  overflow: hidden;
+  background: linear-gradient(135deg, #0a566b 0%, #0b4a5d 45%, #0d7f93 100%);
 }
 
-/* ---------- Panel de marca ---------- */
+/* ---------- Fondos decorativos ---------- */
+/* Mitad derecha clara, exactamente el 50% */
+.auth__claro {
+  position: absolute;
+  z-index: -3;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 50%;
+  background: linear-gradient(180deg, #eaf8fc 0%, #f6fcfe 100%);
+}
+.auth__huella {
+  position: absolute;
+  color: #9ddbe6;
+  opacity: 0.7;
+  rotate: var(--giro, 0deg);
+  animation: auth-flotar 6s ease-in-out infinite;
+}
+/* Resplandor suave en la mitad izquierda */
+.auth__onda {
+  position: absolute;
+  z-index: -2;
+  top: -20%;
+  left: 18%;
+  width: 40%;
+  height: 60%;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle at 40% 60%,
+    rgba(47, 208, 220, 0.38),
+    rgba(47, 208, 220, 0) 70%
+  );
+}
+
+/* ---------- Panel de marca (mitad izquierda) ---------- */
 .auth__panel {
   position: relative;
-  overflow: hidden;
+  z-index: 1;
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
-  gap: 40px;
-  padding: 40px 48px;
-  background: var(--c-primario);
+  gap: clamp(10px, 2vh, 22px);
+  min-width: 0;
+  min-height: 0;
+  padding: clamp(18px, 3.4vh, 34px) clamp(32px, 4.2vw, 64px) clamp(14px, 2.4vh, 26px);
   color: var(--c-blanco);
 }
+/* Logo sin óvalo: el borde blanco lo da el propio filtro del emblema */
 .auth__logo {
-  position: relative;
-  z-index: 1;
   align-self: flex-start;
   display: inline-flex;
-  padding: 12px 20px;
-  border-radius: var(--r-card);
-  background: #f7f7f7; /* mismo fondo que la imagen del logo */
+  align-items: center;
+  gap: 14px;
+  font-size: 30px;
+  font-weight: 800;
+  color: var(--c-blanco);
+  white-space: nowrap;
+  text-shadow: 0 2px 10px rgba(4, 52, 66, 0.35);
+}
+.auth__logo:focus-visible {
+  outline: 2px solid var(--a-cian);
+  outline-offset: 6px;
+  border-radius: 18px;
 }
 .auth__logo img {
-  display: block;
-  width: 190px;
-  height: auto;
+  width: 76px;
+  height: 76px;
+  object-fit: contain;
+  filter: drop-shadow(1.5px 0 0 #fff) drop-shadow(-1.5px 0 0 #fff)
+    drop-shadow(0 1.5px 0 #fff) drop-shadow(0 -1.5px 0 #fff)
+    drop-shadow(0 6px 12px rgba(4, 52, 66, 0.35));
+}
+.auth__logo b {
+  color: var(--a-cian);
 }
 .auth__mensaje {
-  position: relative;
-  z-index: 1;
-  max-width: 440px;
+  max-width: 580px;
 }
 .auth__lema {
-  font-size: 30px;
-  font-weight: 700;
-  line-height: 1.25;
+  font-size: clamp(24px, min(2.7vw, 4.6vh), 42px);
+  font-weight: 800;
+  line-height: 1.1;
+  text-wrap: balance;
+}
+.auth__lema span {
+  color: var(--a-cian);
+}
+.auth__trazo {
+  display: block;
+  width: 150px;
+  height: 14px;
+  margin: 12px 0 0 48px;
+  color: var(--a-cian);
+}
+.auth__intro {
+  margin-top: 10px;
+  font-size: 17px;
+  line-height: 1.4;
+  color: #e3f6fa;
 }
 .auth__puntos {
-  margin-top: 28px;
+  margin-top: clamp(10px, 2.2vh, 22px);
   display: flex;
   flex-direction: column;
-  gap: 14px;
-  font-size: 14px;
-  color: var(--c-banner-sub);
+  gap: clamp(8px, 1.4vh, 12px);
+  font-size: 15px;
+  line-height: 1.3;
+  color: var(--c-blanco);
 }
 .auth__puntos li {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 14px;
 }
-.auth__puntos .icono-circulo {
-  background: var(--c-primario-activo);
+/* Íconos a color dentro de un círculo blanco para que resalten */
+.auth__punto-icono {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: clamp(40px, 5.4vh, 50px);
+  height: clamp(40px, 5.4vh, 50px);
+  border-radius: 50%;
+  background: linear-gradient(145deg, #ffffff, #d6f2f7);
+  color: var(--c-primario-activo);
+  box-shadow: 0 6px 14px rgba(4, 52, 66, 0.3);
+}
+
+/* Imagen de las mascotas completa (sin recortes ni arco), apoyada abajo */
+.auth__escena {
+  position: relative;
+  flex: 1 1 0;
+  min-height: 110px;
+  max-height: 520px;
+  margin: auto -16px 0;
+}
+.auth__escena::before {
+  content: '';
+  position: absolute;
+  inset: 0 0 0;
+  background: radial-gradient(
+    ellipse 46% 42% at 50% 58%,
+    rgba(127, 214, 224, 0.4),
+    rgba(127, 214, 224, 0) 100%
+  );
+}
+.auth__foto {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  object-position: 50% 100%;
+  filter: drop-shadow(0 12px 18px rgba(4, 52, 66, 0.4));
+  animation: auth-subir 0.9s ease both;
+}
+.auth__firma {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  font-family: 'Segoe Script', 'Brush Script MT', 'Lucida Handwriting', cursive;
+  font-size: 21px;
+  font-style: italic;
   color: var(--c-blanco);
 }
-.auth__circulo {
-  position: absolute;
-  border-radius: 50%;
-  pointer-events: none;
-}
-.auth__circulo--grande {
-  right: -90px;
-  bottom: -90px;
-  width: 300px;
-  height: 300px;
-  background: var(--c-primario-activo);
-}
-.auth__circulo--chico {
-  right: 120px;
-  bottom: 70px;
-  width: 110px;
-  height: 110px;
-  background: #2a8193;
+.auth__firma-icono {
+  flex: none;
+  color: var(--a-cian);
 }
 
 /* ---------- Tarjeta del formulario ---------- */
 .auth__contenido {
+  position: relative;
+  z-index: 1;
   display: flex;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 20px;
   padding: 40px 32px;
 }
 .auth__tarjeta {
   width: 100%;
-  max-width: 460px;
-  padding: 36px 36px 32px;
+  max-width: 470px;
+  padding: 34px 38px 26px;
+  border-radius: 28px;
+  background: var(--c-blanco);
+  box-shadow: 0 24px 60px rgba(10, 77, 97, 0.16);
+  animation: auth-subir 0.7s ease both;
+}
+.auth__cabecera {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.auth__cabecera-icono {
+  flex: none;
+  color: var(--c-primario);
 }
 .auth__titulo {
-  font-size: 28px;
-  font-weight: 700;
-  line-height: 1.2;
-  margin-bottom: 6px;
+  font-size: 34px;
+  font-weight: 800;
+  line-height: 1.15;
+  color: var(--c-primario);
+}
+.auth__subtitulo {
+  margin-top: 10px;
+  font-size: 15px;
+  line-height: 1.45;
+  color: var(--c-texto-sec);
+}
+.auth__linea {
+  display: block;
+  width: 110px;
+  height: 3px;
+  margin: 8px auto 0;
+  border-radius: 3px;
+  background: linear-gradient(90deg, transparent, var(--a-cian), transparent);
 }
 .auth__formulario {
-  margin-top: 24px;
+  margin-top: 20px;
   display: flex;
   flex-direction: column;
-  gap: 18px;
+  gap: 16px;
 }
 .auth__fila {
   display: grid;
@@ -123,24 +258,51 @@
 .auth__pie a:hover {
   text-decoration: underline;
 }
-.auth__enviar {
+.auth .auth__enviar {
   width: 100%;
-  gap: 8px;
+  height: 54px;
+  gap: 10px;
   margin-top: 4px;
   border: 0;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #0f5c72, #0a4558);
+  box-shadow: 0 10px 22px rgba(10, 77, 97, 0.28);
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--c-blanco);
   cursor: pointer;
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
+}
+.auth .auth__enviar:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 14px 28px rgba(10, 77, 97, 0.34);
 }
 .auth__enviar:disabled {
   opacity: 0.7;
   cursor: progress;
 }
 .auth__pie {
-  font-size: 13px;
-  color: var(--c-texto-sec);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  margin-top: 22px;
+  font-size: 14px;
+  color: var(--c-primario);
+}
+.auth__pie::before,
+.auth__pie::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--a-borde);
 }
 .auth__pie a {
-  font-weight: 600;
-  color: var(--c-primario);
+  font-weight: 700;
+  color: #0b8aa0;
+  text-decoration: underline;
 }
 
 /* ---------- Campos ---------- */
@@ -151,8 +313,8 @@
   min-width: 0;
 }
 .campo__etiqueta {
-  font-size: 13px;
-  font-weight: 600;
+  font-size: 14px;
+  font-weight: 700;
   padding: 0;
 }
 .campo__control {
@@ -210,6 +372,42 @@
   font-weight: 500;
   color: #b3261e;
 }
+/* Campo con ícono a la izquierda (solo en estas pantallas) */
+.campo__icono {
+  position: absolute;
+  top: 50%;
+  left: 16px;
+  translate: 0 -50%;
+  color: var(--c-primario);
+  pointer-events: none;
+}
+.campo__control--icono .campo__entrada {
+  padding-left: 46px;
+}
+/* Los campos de estas pantallas son «píldoras» */
+.auth .campo__entrada {
+  height: 48px;
+  padding-right: 18px;
+  border-color: var(--a-borde);
+  border-radius: 999px;
+  background: #fbfeff;
+  font-size: 15px;
+}
+.auth .campo__control--icono .campo__entrada {
+  padding-left: 46px;
+}
+.auth .campo__entrada:focus-visible {
+  border-radius: 999px;
+  background: var(--c-blanco);
+}
+.auth .campo__ojo {
+  height: 48px;
+  right: 8px;
+  color: var(--c-primario);
+}
+.auth .campo__control:has(.campo__ojo) .campo__entrada {
+  padding-right: 52px;
+}
 
 /* ---------- Selector de rol ---------- */
 .roles {
@@ -239,22 +437,24 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  min-height: 60px;
+  min-height: 62px;
   padding: 10px 12px;
   border: 1px solid #c4dde3;
-  border-radius: var(--r-control);
+  border-radius: 18px;
   background: var(--c-blanco);
   transition:
     border-color 0.15s,
-    background-color 0.15s;
+    background-color 0.15s,
+    transform 0.2s ease;
 }
 .rol:hover .rol__tarjeta {
   border-color: var(--c-divisor);
+  transform: translateY(-2px);
 }
 .rol input:checked + .rol__tarjeta {
-  border-color: var(--c-primario);
-  background: var(--c-panel);
-  box-shadow: inset 0 0 0 1px var(--c-primario);
+  border-color: #27c3d8;
+  background: #dcf6fa;
+  box-shadow: inset 0 0 0 1px #27c3d8;
 }
 .rol input:focus-visible + .rol__tarjeta {
   outline: 3px solid var(--c-chevron);
@@ -262,8 +462,8 @@
 }
 .rol__titulo {
   display: block;
-  font-size: 13px;
-  font-weight: 600;
+  font-size: 14px;
+  font-weight: 700;
 }
 .rol__detalle {
   display: block;
@@ -311,6 +511,25 @@
     transform: rotate(360deg);
   }
 }
+@keyframes auth-flotar {
+  0%,
+  100% {
+    translate: 0 0;
+  }
+  50% {
+    translate: 0 -8px;
+  }
+}
+@keyframes auth-subir {
+  from {
+    opacity: 0;
+    translate: 0 24px;
+  }
+  to {
+    opacity: 1;
+    translate: 0 0;
+  }
+}
 
 /* ---------- Cerrar sesión (barra lateral) ---------- */
 .sidebar__salir {
@@ -330,38 +549,103 @@
 }
 
 /* ---------- Responsivo ---------- */
+/* Pantallas bajas (laptops): se compacta para que todo quepa sin scroll */
+@media (max-height: 760px) and (min-width: 901px) {
+  .auth__intro,
+  .auth__trazo {
+    display: none;
+  }
+  .auth__logo img {
+    width: 54px;
+    height: 54px;
+  }
+  .auth__logo {
+    font-size: 24px;
+  }
+  .auth__tarjeta {
+    padding: 22px 32px 18px;
+  }
+  .auth__formulario {
+    gap: 12px;
+    margin-top: 14px;
+  }
+  .auth .campo__entrada {
+    height: 44px;
+  }
+  .auth .auth__enviar {
+    height: 48px;
+  }
+  .auth__pie {
+    margin-top: 14px;
+  }
+}
+
+@media (max-width: 1180px) {
+  .auth__panel {
+    padding: 28px 32px 22px;
+  }
+  .auth__logo {
+    font-size: 26px;
+  }
+  .auth__logo img {
+    width: 62px;
+    height: 62px;
+  }
+  .auth__puntos li {
+    font-size: 14px;
+  }
+  .auth__tarjeta {
+    padding: 30px 28px 24px;
+  }
+}
+
 @media (max-width: 900px) {
   .auth {
     grid-template-columns: 1fr;
+    height: auto;
+    min-height: 100vh;
+    background: var(--a-claro);
   }
-  .auth__panel {
-    padding: 24px 24px 28px;
-    gap: 20px;
+  .auth__claro {
+    width: 100%;
   }
-  .auth__lema {
-    font-size: 22px;
-  }
-  .auth__logo {
-    padding: 8px 14px;
-  }
-  .auth__logo img {
-    width: 140px;
-  }
-  .auth__puntos,
-  .auth__circulo--chico {
+  .auth__escena,
+  .auth__onda,
+  .auth__huella:nth-child(n + 3) {
     display: none;
   }
-  .auth__circulo--grande {
-    width: 180px;
-    height: 180px;
-    right: -60px;
-    bottom: -80px;
+  .auth__panel {
+    gap: 18px;
+    padding: 24px 24px 56px;
+    border-radius: 0 0 36px 36px;
+    background: linear-gradient(135deg, #0a566b 0%, #0b4a5d 50%, #0d7f93 100%);
+  }
+  .auth__logo {
+    gap: 10px;
+    font-size: 20px;
+  }
+  .auth__logo img {
+    width: 48px;
+    height: 48px;
+  }
+  .auth__lema {
+    font-size: 24px;
+  }
+  .auth__trazo,
+  .auth__intro,
+  .auth__puntos,
+  .auth__firma {
+    display: none;
   }
   .auth__contenido {
-    padding: 24px 16px 40px;
+    margin-top: -36px;
+    padding: 0 16px 40px;
   }
   .auth__tarjeta {
-    padding: 28px 22px 26px;
+    padding: 28px 22px 24px;
+  }
+  .auth__titulo {
+    font-size: 28px;
   }
 }
 
@@ -369,5 +653,17 @@
   .auth__fila,
   .roles__opciones {
     grid-template-columns: 1fr;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .auth__huella,
+  .auth__foto,
+  .auth__tarjeta {
+    animation: none;
+  }
+  .auth .auth__enviar,
+  .rol__tarjeta {
+    transition: none;
   }
 }

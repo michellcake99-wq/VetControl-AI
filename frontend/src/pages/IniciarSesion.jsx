@@ -6,7 +6,14 @@ import {
   useNavigate,
   useSearchParams,
 } from 'react-router-dom';
-import { CircleAlert, CircleCheck, LoaderCircle } from 'lucide-react';
+import {
+  CircleAlert,
+  CircleCheck,
+  LoaderCircle,
+  LogIn,
+  Lock,
+  Mail,
+} from 'lucide-react';
 import AuthLayout from '../components/AuthLayout.jsx';
 import CampoTexto from '../components/CampoTexto.jsx';
 import { ErrorApi, iniciarSesion } from '../services/api.js';
@@ -118,6 +125,7 @@ export default function IniciarSesion() {
         <CampoTexto
           id="correo"
           etiqueta="Correo electrónico"
+          icono={Mail}
           tipo="email"
           autoComplete="email"
           placeholder="nombre@correo.com"
@@ -128,6 +136,7 @@ export default function IniciarSesion() {
         <CampoTexto
           id="contrasena"
           etiqueta="Contraseña"
+          icono={Lock}
           tipo="password"
           autoComplete="current-password"
           placeholder="Tu contraseña"
@@ -149,7 +158,9 @@ export default function IniciarSesion() {
               Ingresando…
             </>
           ) : (
-            'Iniciar sesión'
+            <>
+              <LogIn size={20} aria-hidden="true" /> Iniciar sesión
+            </>
           )}
         </button>
       </form>

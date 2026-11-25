@@ -18,47 +18,50 @@ export default function Navbar() {
 
   return (
     <header className={`lp-nav${abierto ? ' lp-nav--abierto' : ''}`}>
-      <div className="lp-nav__barra">
-        <Logo />
-        <button
-          type="button"
-          className="lp-nav__toggle"
-          onClick={() => setAbierto((v) => !v)}
-          aria-expanded={abierto}
-          aria-controls="lp-menu"
-          aria-label={abierto ? 'Cerrar menú' : 'Abrir menú'}
-        >
-          {abierto ? <X size={24} /> : <Menu size={24} />}
-        </button>
-      </div>
-
-      <div id="lp-menu" className="lp-nav__panel">
-        <nav aria-label="Secciones">
-          <ul className="lp-nav__menu">
-            {secciones.map((s, i) => (
-              <li key={s.id}>
-                <a
-                  href={`#${s.id}`}
-                  className={i === 0 ? 'is-activo' : undefined}
-                  onClick={cerrar}
-                >
-                  {s.label}
-                </a>
-              </li>
-            ))}
-          </ul>
-        </nav>
-        <div className="lp-nav__acciones">
-          <Link
-            to="/iniciar-sesion"
-            className="lp-boton lp-boton--borde"
-            onClick={cerrar}
+      {/* El recuadro visible del encabezado: borde, sombra y esquinas redondeadas */}
+      <div className="lp-nav__caja">
+        <div className="lp-nav__barra">
+          <Logo />
+          <button
+            type="button"
+            className="lp-nav__toggle"
+            onClick={() => setAbierto((v) => !v)}
+            aria-expanded={abierto}
+            aria-controls="lp-menu"
+            aria-label={abierto ? 'Cerrar menú' : 'Abrir menú'}
           >
-            Iniciar sesión
-          </Link>
-          <Link to="/registro" className="lp-boton" onClick={cerrar}>
-            Registrarse
-          </Link>
+            {abierto ? <X size={24} /> : <Menu size={24} />}
+          </button>
+        </div>
+
+        <div id="lp-menu" className="lp-nav__panel">
+          <nav aria-label="Secciones">
+            <ul className="lp-nav__menu">
+              {secciones.map((s, i) => (
+                <li key={s.id}>
+                  <a
+                    href={`#${s.id}`}
+                    className={i === 0 ? 'is-activo' : undefined}
+                    onClick={cerrar}
+                  >
+                    {s.label}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </nav>
+          <div className="lp-nav__acciones">
+            <Link
+              to="/iniciar-sesion"
+              className="lp-boton lp-boton--borde"
+              onClick={cerrar}
+            >
+              Iniciar sesión
+            </Link>
+            <Link to="/registro" className="lp-boton" onClick={cerrar}>
+              Registrarse
+            </Link>
+          </div>
         </div>
       </div>
     </header>

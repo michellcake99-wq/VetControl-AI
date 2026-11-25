@@ -10,6 +10,15 @@ import {
   BrainCircuit,
   Stethoscope,
   PawPrint,
+  House,
+  Calendar,
+  Syringe,
+  User,
+  Users,
+  ClipboardPlus,
+  History,
+  CalendarClock,
+  Pill,
 } from 'lucide-react';
 
 // Secciones del menú superior (anclas dentro de la misma página).
@@ -107,102 +116,177 @@ export const funcionalidades = [
   },
 ];
 
-// Contenido de la demo para cada rol.
+// ---------------------------------------------------------------------------
+// Demo interactiva: réplica del "Inicio" real de la app para cada rol.
+// Menús, textos y etiquetas salen de routes.js / Sidebar.jsx / Inicio.jsx, y los
+// datos de ejemplo son los de database/seed.sql (Ana Torres, Laura Quintero,
+// Max, Luna, Rocky y Kiwi). Las fechas se calculan a partir de hoy ("dias").
+// ---------------------------------------------------------------------------
 export const demo = {
-  veterinario: {
-    tab: 'Personal Veterinario',
-    url: 'app.vetcontrol.ai/vet-dashboard',
-    usuario: 'Dr. Carlos Mendoza (Veterinario)',
-    titulo: 'Panel Clínico de Control',
-    subtitulo:
-      'Gestionando paciente: Max (Propietaria: María Camila Rodríguez)',
-    accion: '+ Nueva historia / evolución',
-    menu: [
-      'Historia Clínica',
-      'Carnet de Vacunas',
-      'Agendar Citas',
-      'Resumen Asistente IA',
-    ],
-    metricas: [
-      { label: 'Último peso', valor: '28.5 kg', nota: '+0.3 kg óptimo' },
-      {
-        label: 'Estado vacunación',
-        valor: 'Al día',
-        nota: '1 vacuna en 18 días',
-      },
-      {
-        label: 'Tratamiento activo',
-        valor: 'Otic Drops',
-        nota: 'Día 7 de 10 completado',
-      },
-    ],
-    registros: [
-      {
-        titulo: 'Control Otitis Externa',
-        fecha: '12 Oct 2026',
-        texto:
-          'Revisión de canal auditivo. Inflamación reducida en un 80%. Continuar gotas por 3 días más.',
-      },
-      {
-        titulo: 'Vacunación Séxtuple',
-        fecha: '05 Jun 2026',
-        texto: 'Aplicación exitosa sin reacción adversa registrada.',
-      },
-    ],
-    chat: {
-      titulo: 'Chat e IA integrada',
-      entrante:
-        '¡Hola! Soy el Asistente IA de VetControl. ¿En qué puedo ayudarte hoy con el historial de Max?',
-      saliente: 'Genera un resumen de la última consulta y vacunas pendientes.',
-      placeholder: 'Consulta a la IA o escribe al cliente...',
-    },
-  },
   propietario: {
     tab: 'Propietario de Mascota',
-    url: 'app.vetcontrol.ai/mis-mascotas',
-    usuario: 'María Camila Rodríguez (Propietaria)',
-    titulo: 'Seguimiento de Max',
-    subtitulo: 'Veterinario a cargo: Dr. Carlos Mendoza',
-    accion: '+ Registrar evolución',
+    url: 'app.vetcontrol.ai/inicio',
+    portal: 'Portal de propietarios',
+    etiquetaRol: 'Propietario/a',
+    cuenta: { nombre: 'Ana', apellido: 'Torres' },
     menu: [
-      'Historia Clínica',
-      'Carnet de Vacunas',
-      'Agendar Citas',
-      'Chat con mi veterinario',
+      { label: 'Inicio', icono: House },
+      { label: 'Mis mascotas', icono: PawPrint },
+      { label: 'Consultas', icono: ClipboardPlus },
+      { label: 'Historial médico', icono: History },
+      { label: 'Citas', icono: Calendar },
+      { label: 'Vacunas', icono: Syringe },
+      { label: 'Mensajes', icono: MessageCircle },
+      { label: 'Asistente IA', icono: Sparkles },
+      { label: 'Mi perfil', icono: User },
     ],
+    lema: 'El cuidado de tu mascota, más inteligente y organizado.',
+    subtitulo:
+      'Gestiona citas, vacunas, tratamientos e historia clínica desde un solo lugar.',
     metricas: [
-      { label: 'Próxima cita', valor: '15 Nov', nota: 'Control · 9:30 a.m.' },
       {
-        label: 'Próxima vacuna',
-        valor: 'Rabia',
-        nota: 'Recordatorio en 18 días',
+        icono: PawPrint,
+        titulo: 'Mis mascotas',
+        valor: '2',
+        detalle: 'registradas',
+        color: 'azul',
       },
+      { icono: Calendar, titulo: 'Próxima cita', cita: 0, color: 'celeste' },
       {
-        label: 'Tratamiento activo',
-        valor: 'Otic Drops',
-        nota: '3 dosis pendientes',
-      },
-    ],
-    registros: [
-      {
-        titulo: 'Evolución registrada por ti',
-        fecha: 'Hoy',
-        texto:
-          'Max ya no se rasca la oreja. Se aplicaron las gotas de la mañana.',
-      },
-      {
-        titulo: 'Control Otitis Externa',
-        fecha: '12 Oct 2026',
-        texto: 'Indicaciones del veterinario: continuar gotas por 3 días más.',
+        icono: Pill,
+        titulo: 'Tratamientos activos',
+        valor: '1',
+        detalle: 'en curso',
+        color: 'verde',
       },
     ],
-    chat: {
-      titulo: 'Chat con el veterinario',
-      entrante:
-        'Hola María Camila, revisé la evolución de Max. Va muy bien, terminen el tratamiento.',
-      saliente: '¡Gracias doctor! ¿Debo llevarlo al control del 15?',
-      placeholder: 'Escribe a tu veterinario...',
-    },
+    tituloMascotas: 'Mis mascotas',
+    mascotas: [
+      {
+        nombre: 'Max',
+        sexo: 'macho',
+        raza: 'Labrador',
+        nacimiento: '2021-03-15',
+        estados: [
+          { clase: 'al-dia', texto: 'Vacunas al día' },
+          { clase: 'tratamiento', texto: 'Tratamiento en curso' },
+        ],
+      },
+      {
+        nombre: 'Luna',
+        sexo: 'hembra',
+        raza: 'Criollo',
+        nacimiento: '2023-07-01',
+        estados: [
+          { clase: 'al-dia', texto: 'Vacunas al día' },
+          { clase: 'al-dia', texto: 'Sin tratamientos' },
+        ],
+      },
+    ],
+    citas: [
+      {
+        dias: 20,
+        hora: '9:30 a. m.',
+        mascota: 'Max',
+        tipo: 'Control / seguimiento',
+        con: 'Laura Quintero',
+      },
+    ],
+    preguntas: [
+      '¿Cuándo es la próxima vacuna de Max?',
+      'Resume la historia clínica de Luna.',
+      '¿Qué seguimientos tengo pendientes?',
+    ],
+  },
+  veterinario: {
+    tab: 'Personal Veterinario',
+    url: 'app.vetcontrol.ai/inicio',
+    portal: 'Portal veterinario',
+    etiquetaRol: 'Veterinario/a',
+    cuenta: { nombre: 'Laura', apellido: 'Quintero' },
+    menu: [
+      { label: 'Inicio', icono: House },
+      { label: 'Pacientes', icono: PawPrint },
+      { label: 'Propietarios', icono: Users },
+      { label: 'Consultas', icono: ClipboardPlus },
+      { label: 'Citas', icono: Calendar },
+      { label: 'Vacunas', icono: Syringe },
+      { label: 'Mensajes', icono: MessageCircle },
+      { label: 'Asistente IA', icono: Sparkles },
+      { label: 'Mi perfil', icono: User },
+    ],
+    lema: 'El cuidado de tus pacientes, más inteligente y organizado.',
+    subtitulo:
+      'Tu agenda, tus pacientes y sus historias clínicas, en un solo lugar.',
+    metricas: [
+      {
+        icono: PawPrint,
+        titulo: 'Pacientes',
+        valor: '4',
+        detalle: 'en la clínica',
+        color: 'azul',
+      },
+      { icono: Calendar, titulo: 'Próxima cita', cita: 0, color: 'celeste' },
+      {
+        icono: CalendarClock,
+        titulo: 'Citas de hoy',
+        valor: '0',
+        detalle: 'pendientes hoy',
+        color: 'verde',
+      },
+    ],
+    tituloMascotas: 'Pacientes',
+    mascotas: [
+      {
+        nombre: 'Max',
+        sexo: 'macho',
+        raza: 'Labrador',
+        nacimiento: '2021-03-15',
+        dueno: 'Ana Torres',
+      },
+      {
+        nombre: 'Luna',
+        sexo: 'hembra',
+        raza: 'Criollo',
+        nacimiento: '2023-07-01',
+        dueno: 'Ana Torres',
+      },
+      {
+        nombre: 'Rocky',
+        sexo: 'macho',
+        raza: 'Bulldog',
+        nacimiento: '2020-11-20',
+        dueno: 'Carlos Rincón',
+      },
+      {
+        nombre: 'Kiwi',
+        sexo: 'desconocido',
+        raza: 'Periquito',
+        nacimiento: null,
+        dueno: 'Marta Gómez',
+      },
+    ],
+    citas: [
+      {
+        dias: 3,
+        hora: '9:00 a. m.',
+        mascota: 'Rocky',
+        tipo: 'Consulta general',
+        con: 'Carlos Rincón',
+      },
+      {
+        dias: 20,
+        hora: '9:30 a. m.',
+        mascota: 'Max',
+        tipo: 'Control / seguimiento',
+        con: 'Ana Torres',
+      },
+    ],
+    preguntas: [
+      'Resume la historia clínica de un paciente.',
+      '¿Qué pacientes tienen refuerzos vencidos?',
+      '¿Qué seguimientos tengo pendientes esta semana?',
+    ],
   },
 };
 
