@@ -147,6 +147,15 @@ const evolucionCrear = z.object({
     descripcion: texto(2000),
 });
 
+// Ep4-Hu3: seguimiento de la evolución de la mascota (peso en kg, fecha y observaciones).
+// La fecha es opcional (por defecto, hoy); que no sea futura la comprueba el controlador.
+const seguimientoCrear = z.object({
+    peso_kg: z.number({ message: 'El peso es obligatorio y debe ser un número' })
+        .positive('Debe ser mayor a 0').max(2000, 'Máximo 2000 kg'),
+    fecha: fecha.optional(),
+    observaciones: textoOpc(1000),
+});
+
 // ------------------------------- Chat -------------------------------
 const idPositivo = z.coerce.number().int().positive('Id inválido');
 
@@ -242,7 +251,7 @@ module.exports = {
     propietarioCrear, propietarioActualizar,
     mascotaCrear, mascotaActualizar,
     historiaActualizar, consultaCrear, consultaActualizar,
-    tratamientoCrear, tratamientoActualizar, vacunaCrear, vacunaActualizar, evolucionCrear,
+    tratamientoCrear, tratamientoActualizar, vacunaCrear, vacunaActualizar, evolucionCrear, seguimientoCrear,
     conversacionCrear, mensajeEnviar,
     veterinarioCrear, veterinarioActualizar, horarioCrear, horarioActualizar,
     perfilActualizar, perfilContrasena,

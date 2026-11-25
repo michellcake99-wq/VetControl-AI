@@ -24,6 +24,7 @@ import HojaConsulta from './pages/HojaConsulta.jsx';
 import Citas from './pages/Citas.jsx';
 import CarneVacunacion from './pages/CarneVacunacion.jsx';
 import DetalleMascota from './pages/DetalleMascota.jsx';
+import SeguimientoMascota from './pages/SeguimientoMascota.jsx';
 import CitaFormulario from './pages/CitaFormulario.jsx';
 import Propietarios from './pages/Propietarios.jsx';
 import PropietarioFormulario from './pages/PropietarioFormulario.jsx';
@@ -72,6 +73,11 @@ export default function App() {
         <Route path="/mascotas/:id/historia" element={<HistoriaClinica />} />
         {/* Carné de vacunación en PDF (todos los roles) */}
         <Route path="/mascotas/:id/carne" element={<CarneVacunacion />} />
+        {/* Ep4-Hu3: seguimiento de la evolución (peso y observaciones) de la mascota */}
+        <Route
+          path="/mascotas/:id/seguimiento"
+          element={<SeguimientoMascota />}
+        />
 
         {/* Ep3-Hu11: propietarios (solo personal de la clínica) */}
         <Route

@@ -6,7 +6,7 @@
 BEGIN;
 
 TRUNCATE usuarios, propietarios, veterinarios, mascotas, citas, historias_clinicas,
-         consultas, tratamientos, evoluciones_tratamiento, vacunas, recordatorios,
+         consultas, tratamientos, evoluciones_tratamiento, vacunas, seguimiento_peso, recordatorios,
          conversaciones, mensajes, horarios_veterinario, interacciones_ia, auditoria RESTART IDENTITY CASCADE;
 
 -- Hash bcrypt de "Vet12345" (compatible con bcrypt.compare de routes/auth.js)
@@ -83,6 +83,19 @@ FROM (VALUES
 ) AS v(orden, id_historia, nombre, laboratorio, lote, aplicacion, proxima)
 JOIN catalogo_vacunas c ON c.nombre = v.nombre
 ORDER BY v.orden;
+
+-- Ep4-Hu3: seguimiento de peso de Max (id_mascota 1). El último registro coincide con su peso actual
+-- (28,5 kg). Uno lo registró la dueña (Ana) y los otros la veterinaria Laura. Luna, Rocky y Kiwi
+-- quedan sin registros.
+INSERT INTO seguimiento_peso (id_mascota, id_usuario, fecha, peso_kg, observaciones)
+SELECT 1, u.id_usuario, s.fecha, s.peso_kg, s.observaciones
+FROM (VALUES
+  (CURRENT_DATE - 90, 'ana@correo.com',      27.00, 'Pesado en casa. Come con buen apetito'),
+  (CURRENT_DATE - 45, 'vet@vetcontrol.com',  27.80, 'Control de rutina: buena condición corporal'),
+  (CURRENT_DATE - 7,  'vet@vetcontrol.com',  28.50, 'Peso estable; se recomienda mantener la dieta')
+) AS s(fecha, correo, peso_kg, observaciones)
+JOIN usuarios u ON u.correo = s.correo
+ORDER BY s.fecha;
 
 -- Los datos de prueba no cuentan como cambios de usuarios: se limpia la auditoría
 TRUNCATE auditoria RESTART IDENTITY;
