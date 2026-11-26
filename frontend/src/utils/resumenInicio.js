@@ -13,42 +13,24 @@ function inicioDeHoy() {
 }
 
 /**
- * Porcentaje de vacunas al día de un grupo de mascotas.
- * Por cada mascota se toma la aplicación más reciente de cada vacuna: está "al día"
- * si no necesita refuerzo o si la fecha de la próxima dosis todavía no ha pasado.
- * Devuelve null si ninguna mascota tiene vacunas registradas.
+ * Porcentaje de vacunas al día de un grupo de mascotas (Ep5-Hu4).
+ * Recibe el resumen de vacunas de cada mascota ({ total, al_dia }), que el backend calcula junto con
+ * sus pendientes (GET /mascotas/:id/pendientes): una vacuna está "al día" si no necesita refuerzo o si
+ * la fecha de su próxima dosis todavía no ha pasado. Devuelve null si no hay vacunas registradas.
  */
-export function porcentajeVacunasAlDia(vacunasPorMascota) {
-  const hoy = inicioDeHoy();
-  let total = 0;
-  let alDia = 0;
-  for (const vacunas of vacunasPorMascota) {
-    const ultimaPorNombre = new Map();
-    for (const v of vacunas) {
-      const clave = v.nombre.trim().toLowerCase();
-      const anterior = ultimaPorNombre.get(clave);
-      if (
-        !anterior ||
-        new Date(v.fecha_aplicacion) > new Date(anterior.fecha_aplicacion)
-      ) {
-        ultimaPorNombre.set(clave, v);
-      }
-    }
-    for (const v of ultimaPorNombre.values()) {
-      total += 1;
-      if (!v.proxima_dosis || new Date(v.proxima_dosis) >= hoy) alDia += 1;
-    }
-  }
+export function porcentajeVacunasAlDia(resumenesVacunas) {
+  const total = resumenesVacunas.reduce((suma, v) => suma + v.total, 0);
+  const alDia = resumenesVacunas.reduce((suma, v) => suma + v.al_dia, 0);
   return total === 0 ? null : Math.round((alDia / total) * 100);
 }
 
-/** Estado de una mascota para las tarjetas del inicio (solo propietario). */
-function estadoMascota(historia) {
-  if (!historia) return null;
-  const porcentaje = porcentajeVacunasAlDia([historia.vacunas ?? []]);
-  const tratamientosActivos = (historia.consultas ?? [])
-    .flatMap((c) => c.tratamientos ?? [])
-    .filter((t) => t.estado === 'activo').length;
+/** Estado de una mascota para las tarjetas del inicio (solo propietario), a partir de sus pendientes. */
+function estadoMascota(pendientes) {
+  if (!pendientes) return null;
+  const porcentaje = porcentajeVacunasAlDia([pendientes.vacunas]);
+  const tratamientosActivos = pendientes.datos.filter(
+    (p) => p.tipo === 'tratamiento'
+  ).length;
   return {
     vacunas:
       porcentaje === null
@@ -90,17 +72,17 @@ export async function cargarResumenInicio(rol) {
   let tratamientosActivos = null;
   let mascotasConEstado = mascotas;
   if (esPropietario && mascotas.length > 0) {
-    const historias = await Promise.all(
+    const pendientes = await Promise.all(
       mascotas.map((m) =>
-        api.get(`/mascotas/${m.id_mascota}/historia`).catch(() => null)
+        api.get(`/mascotas/${m.id_mascota}/pendientes`).catch(() => null)
       )
     );
     vacunasAlDia = porcentajeVacunasAlDia(
-      historias.filter(Boolean).map((h) => h.vacunas ?? [])
+      pendientes.filter(Boolean).map((p) => p.vacunas)
     );
     mascotasConEstado = mascotas.map((m, i) => ({
       ...m,
-      estado: estadoMascota(historias[i]),
+      estado: estadoMascota(pendientes[i]),
     }));
     tratamientosActivos = mascotasConEstado.reduce(
       (suma, m) => suma + (m.estado?.tratamientosActivos ?? 0),

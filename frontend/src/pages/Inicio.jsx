@@ -12,6 +12,7 @@ import {
   Pill,
   Plus,
   Search,
+  Syringe,
   User,
 } from 'lucide-react';
 import { usuario } from '../data/mockData.js';
@@ -275,6 +276,25 @@ export default function Inicio() {
         color: 'verde',
       };
 
+  // Ep5-Hu4: porcentaje de vacunas al día, calculado con los pendientes de cada mascota
+  const metricaVacunas = esPropietario
+    ? {
+        to: '/vacunas',
+        icono: Syringe,
+        titulo: 'Vacunas al día',
+        valor: !resumen
+          ? '—'
+          : resumen.vacunasAlDia === null
+            ? 'Sin datos'
+            : `${resumen.vacunasAlDia}%`,
+        detalle:
+          resumen?.vacunasAlDia === null
+            ? 'sin vacunas registradas'
+            : 'de tus mascotas',
+        color: 'celeste',
+      }
+    : null;
+
   const preguntasIA = esPropietario
     ? [
         mascotas[0] && `¿Cuándo es la próxima vacuna de ${mascotas[0].nombre}?`,
@@ -334,7 +354,10 @@ export default function Inicio() {
       {errorResumen && <p className="texto-sec">{errorResumen}</p>}
 
       {/* Métricas */}
-      <section className="metricas-inicio" aria-label="Resumen">
+      <section
+        className={`metricas-inicio${metricaVacunas ? ' metricas-inicio--cuatro' : ''}`}
+        aria-label="Resumen"
+      >
         <Metrica
           to="/mascotas"
           icono={PawPrint}
@@ -370,6 +393,7 @@ export default function Inicio() {
           color="celeste"
         />
         <Metrica {...terceraMetrica} />
+        {metricaVacunas && <Metrica {...metricaVacunas} />}
       </section>
 
       {/* Carrusel de mascotas / pacientes */}
