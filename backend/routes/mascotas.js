@@ -15,6 +15,8 @@ const id = validar(esquemas.parametroId, 'params');
 router.use(verificarToken, cargarPerfil);
 
 router.get('/', c.listar);
+// Ep6-Hu3: vista global de pendientes clínicos (solo personal veterinario).
+router.get('/pendientes-clinicos', permitirRoles('veterinario', 'administrador'), pe.listarGlobal);
 router.post('/', (req, _res, next) => {
     // El propietario registra mascotas a su nombre; no necesita enviar id_propietario
     if (req.usuario.rol === 'propietario') req.body = { ...req.body, id_propietario: req.usuario.id_propietario };

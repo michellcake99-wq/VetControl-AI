@@ -3,6 +3,7 @@ const { query } = require('../utils/baseDatos');
 const { ErrorHttp } = require('../utils/errores');
 const { obtenerMascotaAutorizada } = require('../utils/acceso');
 const { generarRespuesta, config } = require('../utils/servicioIA');
+const { obtenerPendienteParaIA, exigirPersonal } = require('./pendientesController');
 
 const limite = () => ({
     consultas: Number(process.env.IA_LIMITE_CONSULTAS) || 20,
@@ -181,4 +182,36 @@ async function resumirHistorial(req, res) {
     res.json({ ...resultado, aviso: AVISO_RESUMEN });
 }
 
-module.exports = { consultar, resumirHistorial, cupo };
+
+
+// Ep6-Hu3: sugerencia contextual para un pendiente clínico. No modifica registros.
+const AVISO_PENDIENTE = 'Sugerencia generada por IA. Es un apoyo para el veterinario y no modifica automáticamente la información clínica.';
+const INSTRUCCIONES_PENDIENTE = `Eres el asistente clínico de VetControl AI. Genera UNA sugerencia breve de acción para el veterinario,
+utilizando exclusivamente los datos del pendiente recibido. Responde en español, en una o dos frases, con una acción prudente
+que el veterinario pueda verificar. No diagnostiques, no indiques dosis ni prescribas medicamentos. No inventes datos.
+La sugerencia es orientativa: no afirmes que realizaste cambios ni cierres tratamientos o actualices vacunas.`;
+
+// POST /api/ia/sugerir-pendiente { id_mascota, tipo, id_registro? }
+async function sugerirPendiente(req, res) {
+    exigirPersonal(req.usuario);
+    const { id_mascota: idMascota, tipo, id_registro: idRegistro } = req.body;
+    const pendiente = await obtenerPendienteParaIA({ id_mascota: idMascota, tipo, id_registro: idRegistro });
+    const mascota = await obtenerMascotaAutorizada(idMascota, req.usuario);
+    const restantes = await verificarLimite(req.usuario.id_usuario);
+    const pregunta = `Sugerencia para pendiente clínico: ${pendiente.tipo} de ${pendiente.nombre_mascota}`;
+    const mensajes = [
+        { role: 'system', content: INSTRUCCIONES_PENDIENTE },
+        { role: 'user', content: JSON.stringify({
+            mascota: pendiente.nombre_mascota,
+            especie: pendiente.especie,
+            tipo: pendiente.tipo,
+            motivo: pendiente.motivo,
+            detalle: pendiente.detalle,
+            fecha_pendiente: pendiente.fecha_pendiente,
+        }) },
+    ];
+    const resultado = await ejecutarIA({ usuario: req.usuario, mascota, mensajes, pregunta, restantes });
+    res.json({ ...resultado, pendiente: { id_mascota: pendiente.id_mascota, tipo: pendiente.tipo, id_registro: pendiente.id_registro }, aviso: AVISO_PENDIENTE });
+}
+
+module.exports = { consultar, resumirHistorial, cupo, sugerirPendiente };

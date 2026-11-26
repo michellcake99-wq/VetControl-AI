@@ -10,6 +10,7 @@ import {
   Stethoscope,
   ClipboardPlus,
   History,
+  ClipboardList,
 } from 'lucide-react';
 
 // Ep7-Hu1: cada opción del menú indica qué roles la ven
@@ -33,6 +34,13 @@ export const navItems = [
     to: '/propietarios',
     label: 'Propietarios',
     icon: Users,
+    roles: PERSONAL_CLINICA,
+  },
+  // Ep6-Hu3: pendientes clínicos globales (solo veterinario y administrador)
+  {
+    to: '/pendientes-clinicos',
+    label: 'Pendientes clínicos',
+    icon: ClipboardList,
     roles: PERSONAL_CLINICA,
   },
   // Ep3-Hu13: consultas (el veterinario registra; propietario y administrador consultan)

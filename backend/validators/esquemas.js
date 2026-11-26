@@ -245,6 +245,13 @@ const restablecerContrasena = z.object({
 }).refine((d) => d.contrasena === d.confirmacion, { message: 'Las contraseñas no coinciden', path: ['confirmacion'] });
 
 const iaResumir = z.object({ id_mascota: z.number({ message: 'Es obligatorio' }).int().positive() });
+const iaSugerirPendiente = z.object({
+    id_mascota: z.number().int().positive(),
+    tipo: z.enum(['vacuna', 'tratamiento', 'sin_consulta']),
+    id_registro: z.number().int().positive().nullish(),
+}).refine((d) => d.tipo === 'sin_consulta' || d.id_registro != null, {
+    message: 'El identificador del registro es obligatorio para este tipo de pendiente', path: ['id_registro'],
+});
 
 module.exports = {
     parametroId,
@@ -256,5 +263,5 @@ module.exports = {
     veterinarioCrear, veterinarioActualizar, horarioCrear, horarioActualizar,
     perfilActualizar, perfilContrasena,
     olvideContrasena, verificarTokenRecuperacion, restablecerContrasena,
-    iaConsultar, iaResumir, ORGANOS_SISTEMAS, ACTITUDES,
+    iaConsultar, iaResumir, iaSugerirPendiente, ORGANOS_SISTEMAS, ACTITUDES,
 };
