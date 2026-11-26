@@ -16,9 +16,10 @@ function manejoErrores(error, _req, res, _next) {
     if (error instanceof ErrorHttp) {
         return res.status(error.estado).json({ mensaje: error.message, ...(error.detalles && { detalles: error.detalles }) });
     }
+    // En producción no se devuelve el detalle de PostgreSQL: puede traer datos de otras personas
     if (error.code && ERRORES_PG[error.code]) {
         const [estado, mensaje] = ERRORES_PG[error.code];
-        return res.status(estado).json({ mensaje, ...(error.detail && { detalle: error.detail }) });
+        return res.status(estado).json({ mensaje, ...(error.detail && process.env.NODE_ENV !== 'production' && { detalle: error.detail }) });
     }
     if (error.type === 'entity.parse.failed') {
         return res.status(400).json({ mensaje: 'JSON mal formado' });

@@ -16,9 +16,16 @@ const conversacionesRoutes = require('./routes/conversaciones');
 const notificacionesRoutes = require('./routes/notificaciones');
 const { iniciarPlanificador } = require('./utils/planificador');
 const { iniciarChat } = require('./sockets/chat');
+const seguridad = require('./middleware/seguridad');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+
+// Ep7-Hu2: protección en tránsito (HTTPS en producción, CORS limitado al frontend, cabeceras de seguridad).
+// Va primero para que también cubra los errores y las rutas inexistentes.
+app.disable('x-powered-by');
+if (process.env.NODE_ENV === 'production') app.set('trust proxy', 1); // detrás del proxy de la nube
+app.use(seguridad.middlewares);
 
 // Permitir que Express reciba datos JSON
 // 1 MB alcanza para la foto de una mascota (llega ya reducida desde el navegador)
@@ -71,9 +78,10 @@ app.use(manejoErrores);
 
 // Iniciar servidor (no se inicia cuando lo importan las pruebas)
 if (require.main === module) {
+    seguridad.verificarConfiguracion(); // en producción exige JWT_SECRET seguro y FRONTEND_URL con https
     // Express y Socket.IO comparten el mismo servidor HTTP
     const servidor = http.createServer(app);
-    const io = new Server(servidor);
+    const io = new Server(servidor, { cors: { origin: seguridad.origenSocket } });
     app.set('io', io); // Ep8-Hu4: permite avisar en tiempo real cuando cambia un horario
     iniciarChat(io);
     // Envía los recordatorios cuando les llega la hora

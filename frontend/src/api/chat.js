@@ -14,8 +14,11 @@ export function usuarioDelToken(token) {
   }
 }
 
+// Ep7-Hu2: si el frontend y la API están en dominios distintos, se define VITE_API_URL (igual que services/api.js)
+const URL_API = import.meta.env.VITE_API_URL ?? '';
+
 async function pedir(metodo, url, body) {
-  const res = await fetch(`/api${url}`, {
+  const res = await fetch(`${URL_API}/api${url}`, {
     method: metodo,
     headers: {
       Authorization: `Bearer ${obtenerToken()}`,
@@ -37,4 +40,4 @@ export const chatApi = {
 };
 
 /** Socket del chat: autentica con el mismo token JWT. */
-export const conectarChat = (token) => io({ auth: { token } });
+export const conectarChat = (token) => io(URL_API || undefined, { auth: { token } });
