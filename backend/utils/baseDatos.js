@@ -43,22 +43,30 @@ async function enTransaccion(fn) {
     }
 }
 
+// Ep7-Hu2: los valores siempre viajan como parámetros ($1, $2…). Los nombres de tabla y columna no
+// pueden ser parámetros, así que se validan: solo letras minúsculas, números y guion bajo.
+function identificador(nombre) {
+    if (!/^[a-z_][a-z0-9_]*$/.test(nombre)) throw new Error(`Identificador SQL no permitido: ${nombre}`);
+    return nombre;
+}
+const listaIdentificadores = (lista) => (lista === '*' ? '*' : lista.split(',').map((c) => identificador(c.trim())).join(', '));
+
 /** INSERT con las columnas del objeto recibido. */
 function construirInsert(tabla, datos, retorno = '*') {
-    const columnas = Object.keys(datos);
+    const columnas = Object.keys(datos).map(identificador);
     return {
-        text: `INSERT INTO ${tabla} (${columnas.join(', ')})
-               VALUES (${columnas.map((_, i) => `$${i + 1}`).join(', ')}) RETURNING ${retorno}`,
+        text: `INSERT INTO ${identificador(tabla)} (${columnas.join(', ')})
+               VALUES (${columnas.map((_, i) => `$${i + 1}`).join(', ')}) RETURNING ${listaIdentificadores(retorno)}`,
         values: Object.values(datos),
     };
 }
 
 /** UPDATE solo con los campos recibidos. */
 function construirUpdate(tabla, columnaId, id, campos) {
-    const columnas = Object.keys(campos);
+    const columnas = Object.keys(campos).map(identificador);
     return {
-        text: `UPDATE ${tabla} SET ${columnas.map((c, i) => `${c} = $${i + 1}`).join(', ')}
-               WHERE ${columnaId} = $${columnas.length + 1} RETURNING *`,
+        text: `UPDATE ${identificador(tabla)} SET ${columnas.map((c, i) => `${c} = $${i + 1}`).join(', ')}
+               WHERE ${identificador(columnaId)} = $${columnas.length + 1} RETURNING *`,
         values: [...Object.values(campos), id],
     };
 }
