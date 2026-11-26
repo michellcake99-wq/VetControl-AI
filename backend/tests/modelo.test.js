@@ -72,7 +72,9 @@ test('valida rangos con CHECK (peso, temperatura, fechas)', async () => {
 });
 
 test('no permite borrar un propietario con mascotas (RESTRICT)', async () => {
-    await expect(q('DELETE FROM propietarios WHERE id_propietario = 1')).rejects.toMatchObject({ code: '23503' });
+    // Con ON DELETE RESTRICT PostgreSQL devuelve 23001 (restrict_violation); con NO ACTION devolvería 23503.
+    await expect(q('DELETE FROM propietarios WHERE id_propietario = 1'))
+        .rejects.toMatchObject({ code: expect.stringMatching(/^(23503|23001)$/) });
 });
 
 test('fecha_actualizacion cambia con el trigger', async () => {

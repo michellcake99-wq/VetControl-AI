@@ -12,8 +12,13 @@ beforeAll(async () => {
 });
 afterAll(() => pool.end());
 
-// Fecha 'AAAA-MM-DD' de hace n días (negativo = en el futuro)
-const hace = (n) => new Date(Date.now() - n * 864e5).toISOString().slice(0, 10);
+// Fecha local 'AAAA-MM-DD' de hace n días (negativo = en el futuro).
+// Se usa la fecha local (no toISOString, que da UTC) para coincidir con la fecha que guarda el servidor.
+const hace = (n) => {
+  const d = new Date();
+  d.setDate(d.getDate() - n);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+};
 
 describe('Consultar el seguimiento', () => {
   test('el veterinario ve los registros de Max, del más reciente al más antiguo', async () => {
