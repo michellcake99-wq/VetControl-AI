@@ -141,8 +141,11 @@ const vacunaActualizar = z.object(camposVacuna).partial()
     .refine(noVacio, alMenosUno)
     .refine(proximaDespuesDeAplicacion, errorProximaDosis);
 
+// Ep5-Hu5: el propietario registra cómo evoluciona su mascota durante el tratamiento.
+// La descripción es el único campo obligatorio. Los campos anteriores se conservan
+// como opcionales para mantener compatibilidad con registros existentes.
 const evolucionCrear = z.object({
-    estado_general: z.number().int().min(1, 'Entre 1 y 5').max(5, 'Entre 1 y 5'),
+    estado_general: z.number().int().min(1, 'Entre 1 y 5').max(5, 'Entre 1 y 5').optional(),
     dosis_aplicada: z.boolean().default(true),
     descripcion: texto(2000),
 });

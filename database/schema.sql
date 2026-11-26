@@ -205,10 +205,10 @@ CREATE INDEX idx_tratamientos_consulta ON tratamientos(id_consulta);
 -- Evolución del tratamiento registrada por el PROPIETARIO entre consultas
 CREATE TABLE evoluciones_tratamiento (
   id_evolucion     SERIAL PRIMARY KEY,
-  id_tratamiento   INT NOT NULL REFERENCES tratamientos(id_tratamiento) ON DELETE CASCADE,
+  id_tratamiento   INT NOT NULL REFERENCES tratamientos(id_tratamiento) ON DELETE RESTRICT,
   id_usuario       INT NOT NULL REFERENCES usuarios(id_usuario) ON DELETE RESTRICT, -- quién lo registró
   fecha            TIMESTAMPTZ NOT NULL DEFAULT now(),
-  estado_general   SMALLINT NOT NULL CHECK (estado_general BETWEEN 1 AND 5), -- 1 muy mal ... 5 muy bien
+  estado_general   SMALLINT CHECK (estado_general BETWEEN 1 AND 5), -- opcional; 1 muy mal ... 5 muy bien
   dosis_aplicada   BOOLEAN NOT NULL DEFAULT TRUE,
   descripcion      TEXT NOT NULL,
   fecha_registro   TIMESTAMPTZ NOT NULL DEFAULT now()
