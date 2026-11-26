@@ -7,6 +7,7 @@ const c = require('../controllers/mascotasController');
 const h = require('../controllers/historiasController');
 const cm = require('../controllers/consultasMascotaController');
 const sg = require('../controllers/seguimientoController');
+const pe = require('../controllers/pendientesController');
 
 const router = express.Router();
 const id = validar(esquemas.parametroId, 'params');
@@ -37,5 +38,8 @@ router.get('/:id/historial', id, cm.historial);
 // y el propietario de la mascota; queda guardado quién lo registró.
 router.get('/:id/seguimiento', id, sg.listar);
 router.post('/:id/seguimiento', id, validar(esquemas.seguimientoCrear), sg.registrar);
+
+// Ep5-Hu4: pendientes de la mascota (próximas citas, vacunas por aplicar o vencidas y tratamientos activos)
+router.get('/:id/pendientes', id, pe.listar);
 
 module.exports = router;

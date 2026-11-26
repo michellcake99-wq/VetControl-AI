@@ -266,6 +266,20 @@ Respuesta: `{ mascota: { id_mascota, nombre, especie }, resumen: { consulta, tra
 - El `POST` responde 201 con el registro creado. El peso actual de la mascota (`mascotas.peso_kg`) pasa a ser el del registro con la fecha más reciente; un registro de una fecha anterior no lo cambia.
 - Una mascota de otro propietario responde 403 y una inexistente, 404. Tabla `seguimiento_peso` (migración `010`).
 
+## Pendientes de la mascota (Ep5-Hu4)
+
+| Método | Ruta | Quién |
+|---|---|---|
+| GET | `/mascotas/:id/pendientes` | todos (el propietario solo los de sus mascotas) |
+
+- Junta en una sola respuesta lo que tiene pendiente la mascota: **próximas citas** (programadas, confirmadas o reprogramadas que aún no ocurren), **vacunas por aplicar o vencidas** (la próxima dosis de la última aplicación de cada vacuna; si ya se aplicó el refuerzo, la dosis anterior deja de contar) y **tratamientos activos**. Las citas atendidas, canceladas o a las que no asistió, y los tratamientos finalizados o suspendidos, no aparecen.
+- Respuesta: `{ mascota: { id_mascota, nombre, especie }, fecha_corte, total, vencidos, vacunas: { total, al_dia, porcentaje }, datos: [...] }`. Una mascota sin pendientes devuelve `datos: []` y `total: 0`; la pantalla muestra el mensaje correspondiente.
+- Cada elemento de `datos` trae `tipo` (`cita`, `vacuna` o `tratamiento`), `id`, `titulo` (motivo de la cita, nombre de la vacuna o medicamento), `fecha` (`AAAA-MM-DD`) y `estado`: `proximo` (la fecha es hoy o futura) o `vencido` (la fecha ya pasó). Además, según el tipo: `fecha_hora`, `estado_cita`, `tipo_consulta` y `nombre_veterinario` (cita); `fecha_aplicacion` (vacuna); `dosis`, `frecuencia`, `via`, `fecha_inicio`, `fecha_fin` e `id_consulta` (tratamiento).
+- La `fecha` de una cita es su día en hora de Colombia; la de una vacuna, su próxima dosis; la de un tratamiento, su fecha de fin (un tratamiento activo cuya fecha de fin ya pasó se marca `vencido`; sin fecha de fin está en curso y se ordena por su inicio).
+- `datos` va ordenado por fecha, de la más antigua a la más cercana, así que los vencidos quedan primero. Con la misma fecha: citas, luego vacunas y luego tratamientos.
+- `vacunas` es el resumen que usa el dashboard: `total` de vacunas distintas registradas, `al_dia` (sin refuerzo pendiente o con la próxima dosis todavía vigente) y `porcentaje` (`null` si no hay vacunas registradas). El porcentaje del inicio es la suma de `al_dia` entre la suma de `total` de todas las mascotas del propietario.
+- Una mascota de otro propietario responde 403 y una inexistente, 404. No necesita migración: usa las tablas existentes (`citas`, `vacunas`, `tratamientos`).
+
 ## Asistente de IA (Ep6-Hu1, Ep6-Hu2 y Ep6-Hu5)
 
 | Método | Ruta | Quién |
