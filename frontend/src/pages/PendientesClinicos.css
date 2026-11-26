@@ -1,0 +1,208 @@
+.pagina-pendientes-clinicos {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+  padding-bottom: 28px;
+}
+
+.encabezado-pendientes-clinicos {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 20px;
+}
+.encabezado-pendientes-clinicos h1 {
+  margin: 5px 0 7px;
+  font-size: clamp(25px, 3vw, 32px);
+  letter-spacing: -0.8px;
+}
+.encabezado-pendientes-clinicos > div > p:last-child,
+.listado-pendientes-clinicos__cabecera p {
+  color: var(--c-texto-sec);
+  font-size: 13px;
+  line-height: 1.5;
+}
+.encabezado-pendientes-clinicos__sobrelinea {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--c-texto-sec);
+  font-size: 12px;
+  font-weight: 650;
+}
+
+.resumen-pendientes-clinicos {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+.resumen-pendiente {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 18px;
+  min-height: 92px;
+}
+.resumen-pendiente__icono,
+.pendiente-clinico__icono {
+  display: grid;
+  flex: 0 0 auto;
+  place-items: center;
+  border-radius: 13px;
+}
+.resumen-pendiente__icono {
+  width: 44px;
+  height: 44px;
+}
+.resumen-pendiente > div { display: flex; flex-direction: column; gap: 3px; }
+.resumen-pendiente strong { font-size: 25px; line-height: 1.1; }
+.resumen-pendiente span:last-child { color: var(--c-texto-sec); font-size: 12px; }
+.resumen-pendiente--vacuna .resumen-pendiente__icono,
+.pendiente-clinico__icono--vacuna { background: #fde9e8; color: #b74444; }
+.resumen-pendiente--tratamiento .resumen-pendiente__icono,
+.pendiente-clinico__icono--tratamiento { background: #fff1dc; color: #96600d; }
+.resumen-pendiente--consulta .resumen-pendiente__icono,
+.pendiente-clinico__icono--consulta { background: #e5f1fb; color: #286a9e; }
+
+.listado-pendientes-clinicos { padding: 22px; }
+.listado-pendientes-clinicos__cabecera {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+.listado-pendientes-clinicos__cabecera h2 { margin-bottom: 5px; font-size: 17px; }
+.listado-pendientes-clinicos__total {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 11px;
+  border-radius: 10px;
+  background: var(--c-panel);
+  color: var(--c-primario);
+  font-size: 13px;
+  font-weight: 700;
+}
+.filtros-pendientes-clinicos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 20px 0;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--c-borde);
+}
+.filtro-pendiente {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 35px;
+  padding: 0 12px;
+  border: 1px solid var(--c-borde);
+  border-radius: 999px;
+  background: #fff;
+  color: var(--c-texto-sec);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.filtro-pendiente span {
+  display: grid;
+  place-items: center;
+  min-width: 19px;
+  height: 19px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: var(--c-panel);
+  font-size: 10px;
+}
+.filtro-pendiente--activo {
+  border-color: var(--c-primario);
+  background: var(--c-primario);
+  color: #fff;
+}
+.filtro-pendiente--activo span { background: rgba(255,255,255,.18); color: #fff; }
+.lista-pendientes-clinicos { display: flex; flex-direction: column; gap: 13px; }
+.pendiente-clinico {
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr);
+  gap: 15px;
+  padding: 17px;
+  border-radius: 14px;
+  box-shadow: none;
+}
+.pendiente-clinico__icono { width: 44px; height: 44px; }
+.pendiente-clinico__contenido { min-width: 0; }
+.pendiente-clinico__encabezado {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+}
+.pendiente-clinico__tipo {
+  color: var(--c-texto-sec);
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .35px;
+}
+.pendiente-clinico__encabezado h2 { margin: 3px 0; font-size: 17px; }
+.pendiente-clinico__especie { color: var(--c-texto-sec); font-size: 11px; }
+.pendiente-clinico__estado {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 9px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.pendiente-clinico__estado--vacuna { background: #fde9e8; color: #a93636; }
+.pendiente-clinico__estado--tratamiento { background: #fff1dc; color: #875607; }
+.pendiente-clinico__estado--consulta { background: #e5f1fb; color: #245f91; }
+.pendiente-clinico__motivo { margin: 13px 0 8px; color: var(--c-primario); font-size: 13px; font-weight: 600; line-height: 1.5; }
+.pendiente-clinico__detalle { display: flex; flex-wrap: wrap; gap: 6px 22px; color: var(--c-texto-sec); font-size: 11px; }
+.pendiente-clinico__detalle strong { color: var(--c-primario); }
+.pendiente-clinico__acciones { display: flex; align-items: center; flex-wrap: wrap; gap: 12px; margin-top: 14px; }
+.pendiente-clinico__historia { display: inline-flex; align-items: center; gap: 3px; color: var(--c-primario-activo); font-size: 12px; font-weight: 700; }
+.pendiente-clinico__historia:hover { text-decoration: underline; }
+.pendiente-clinico__sugerencia {
+  margin-top: 14px;
+  padding: 12px 14px;
+  border: 1px solid #e5def2;
+  border-radius: 11px;
+  background: #faf8fd;
+}
+.pendiente-clinico__sugerencia-titulo { display: flex; align-items: center; gap: 7px; color: #70509b; font-size: 12px; font-weight: 750; }
+.pendiente-clinico__sugerencia p { margin: 7px 0 5px; color: #344b59; font-size: 12px; line-height: 1.55; }
+.pendiente-clinico__sugerencia small { color: #687d87; font-size: 10px; line-height: 1.4; }
+.pendiente-clinico__error { margin-top: 10px; color: #b23b3b; font-size: 11px; }
+.estado-vacio-pendientes {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-height: 190px;
+  padding: 28px 16px;
+  color: var(--c-texto-sec);
+  text-align: center;
+}
+.estado-vacio-pendientes > svg { color: #369879; }
+.estado-vacio-pendientes strong { color: var(--c-primario); font-size: 15px; }
+.estado-vacio-pendientes p { max-width: 430px; font-size: 12px; line-height: 1.5; }
+.nota-pendientes-clinicos { display: flex; align-items: flex-start; gap: 8px; color: var(--c-texto-sec); font-size: 11px; line-height: 1.5; }
+.nota-pendientes-clinicos svg { flex: 0 0 auto; margin-top: 1px; }
+.pendientes-girando { animation: pendientes-giro 1s linear infinite; }
+@keyframes pendientes-giro { to { transform: rotate(360deg); } }
+
+@media (max-width: 760px) {
+  .encabezado-pendientes-clinicos { align-items: flex-start; flex-direction: column; }
+  .resumen-pendientes-clinicos { grid-template-columns: 1fr; gap: 10px; }
+  .resumen-pendiente { min-height: 75px; padding: 14px; }
+  .listado-pendientes-clinicos { padding: 16px; }
+  .pendiente-clinico { grid-template-columns: 36px minmax(0, 1fr); gap: 10px; padding: 13px; }
+  .pendiente-clinico__icono { width: 36px; height: 36px; }
+  .pendiente-clinico__encabezado { flex-direction: column; }
+}

@@ -4,6 +4,7 @@
 // (el que usa el dashboard).
 const { query } = require('../utils/baseDatos');
 const { obtenerMascotaAutorizada } = require('../utils/acceso');
+const { ErrorHttp } = require('../utils/errores');
 
 // Las fechas se calculan en hora de Colombia/Ecuador (UTC-5), igual que las citas
 const ZONA = 'America/Bogota';
@@ -134,4 +135,156 @@ async function listar(req, res) {
     });
 }
 
-module.exports = { listar };
+// -----------------------------------------------------------------------------
+// Ep6-Hu3: identificación GLOBAL de información clínica pendiente/desactualizada.
+// Se implementa en este mismo controlador para compartir el dominio de pendientes
+// con Ep5-Hu4, sin duplicar controladores ni rutas.
+// -----------------------------------------------------------------------------
+const ROLES_PERSONAL = ['veterinario', 'administrador'];
+
+function exigirPersonal(usuario) {
+    if (!ROLES_PERSONAL.includes(usuario?.rol)) {
+        throw new ErrorHttp(403, 'Solo el personal veterinario puede consultar los pendientes clínicos');
+    }
+}
+
+/**
+ * Consulta los pendientes vigentes de todas las mascotas activas.
+ * No guarda una copia: cada llamada recalcula los resultados desde PostgreSQL.
+ */
+async function obtenerPendientesClinicos() {
+    const { rows: fechaRows } = await query(
+        `SELECT (now() AT TIME ZONE $1)::date::text AS hoy`, [ZONA]
+    );
+    const hoy = fechaRows[0].hoy;
+
+    const [vacunas, tratamientos, seguimientos] = await Promise.all([
+        // Solo se evalúa la aplicación más reciente de cada vacuna por mascota y nombre.
+        query(
+            `SELECT m.id_mascota, m.nombre AS nombre_mascota, m.especie,
+                    h.id_historia, h.numero AS numero_historia,
+                    ultima.id_vacuna AS id_registro, ultima.nombre AS detalle,
+                    ultima.proxima_dosis AS fecha_pendiente,
+                    'vacuna'::text AS tipo,
+                    'La próxima dosis de la vacuna está vencida'::text AS motivo
+               FROM (
+                    SELECT DISTINCT ON (h.id_mascota, lower(trim(v.nombre)))
+                           v.id_vacuna, v.id_historia, v.nombre, v.proxima_dosis,
+                           h.id_mascota
+                      FROM vacunas v
+                      JOIN historias_clinicas h ON h.id_historia = v.id_historia
+                     WHERE v.proxima_dosis IS NOT NULL
+                     ORDER BY h.id_mascota, lower(trim(v.nombre)),
+                              v.fecha_aplicacion DESC, v.id_vacuna DESC
+               ) ultima
+               JOIN historias_clinicas h ON h.id_historia = ultima.id_historia
+               JOIN mascotas m ON m.id_mascota = h.id_mascota
+              WHERE m.activo = TRUE AND ultima.proxima_dosis < $1::date
+              ORDER BY ultima.proxima_dosis ASC, m.nombre ASC`,
+            [hoy]
+        ),
+        // Sin fecha_fin no se considera vencido: el tratamiento puede seguir en curso.
+        query(
+            `SELECT m.id_mascota, m.nombre AS nombre_mascota, m.especie,
+                    h.id_historia, h.numero AS numero_historia,
+                    t.id_tratamiento AS id_registro, t.medicamento AS detalle,
+                    t.fecha_fin AS fecha_pendiente,
+                    'tratamiento'::text AS tipo,
+                    'El tratamiento sigue activo aunque su fecha de finalización ya pasó'::text AS motivo
+               FROM tratamientos t
+               JOIN consultas c ON c.id_consulta = t.id_consulta
+               JOIN historias_clinicas h ON h.id_historia = c.id_historia
+               JOIN mascotas m ON m.id_mascota = h.id_mascota
+              WHERE m.activo = TRUE
+                AND t.estado = 'activo'
+                AND t.fecha_fin IS NOT NULL
+                AND t.fecha_fin < $1::date
+              ORDER BY t.fecha_fin ASC, m.nombre ASC`,
+            [hoy]
+        ),
+        // Incluye mascotas sin consultas y aquellas cuya última consulta supera 90 días.
+        query(
+            `SELECT m.id_mascota, m.nombre AS nombre_mascota, m.especie,
+                    h.id_historia, h.numero AS numero_historia,
+                    NULL::int AS id_registro,
+                    'Seguimiento clínico'::text AS detalle,
+                    ultima.fecha_ultima_consulta AS fecha_pendiente,
+                    'sin_consulta'::text AS tipo,
+                    CASE WHEN ultima.fecha_ultima_consulta IS NULL
+                         THEN 'La mascota no tiene consultas registradas'
+                         ELSE 'La última consulta fue hace más de 90 días'
+                    END::text AS motivo
+               FROM mascotas m
+               JOIN historias_clinicas h ON h.id_mascota = m.id_mascota
+               LEFT JOIN LATERAL (
+                    SELECT max(c.fecha)::date AS fecha_ultima_consulta
+                      FROM consultas c
+                     WHERE c.id_historia = h.id_historia
+               ) ultima ON TRUE
+              WHERE m.activo = TRUE
+                AND (ultima.fecha_ultima_consulta IS NULL
+                     OR ultima.fecha_ultima_consulta < $1::date - INTERVAL '90 days')
+              ORDER BY ultima.fecha_ultima_consulta NULLS FIRST, m.nombre ASC`,
+            [hoy]
+        ),
+    ]);
+
+    const normalizar = (filas) => filas.map((p) => ({
+        ...p,
+        fecha_pendiente: p.fecha_pendiente ? String(p.fecha_pendiente).slice(0, 10) : null,
+        id_mascota: Number(p.id_mascota),
+        id_historia: Number(p.id_historia),
+        id_registro: p.id_registro == null ? null : Number(p.id_registro),
+        sugerencia: null,
+    }));
+
+    const datos = [
+        ...normalizar(vacunas.rows),
+        ...normalizar(tratamientos.rows),
+        ...normalizar(seguimientos.rows),
+    ].sort((a, b) => {
+        // Los registros sin fecha (mascotas sin consultas) quedan al final.
+        if (!a.fecha_pendiente && b.fecha_pendiente) return 1;
+        if (a.fecha_pendiente && !b.fecha_pendiente) return -1;
+        return (a.fecha_pendiente || '').localeCompare(b.fecha_pendiente || '')
+            || a.nombre_mascota.localeCompare(b.nombre_mascota);
+    });
+
+    return {
+        fecha_corte: hoy,
+        total: datos.length,
+        resumen: {
+            vacunas_vencidas: vacunas.rowCount,
+            tratamientos_sin_cerrar: tratamientos.rowCount,
+            sin_consulta_90_dias: seguimientos.rowCount,
+        },
+        datos,
+    };
+}
+
+// GET /api/mascotas/pendientes-clinicos — solo veterinario/administrador.
+async function listarGlobal(req, res) {
+    exigirPersonal(req.usuario);
+    res.json(await obtenerPendientesClinicos());
+}
+
+/** Recupera el pendiente vigente antes de solicitar una sugerencia a la IA. */
+async function obtenerPendienteParaIA({ id_mascota, tipo, id_registro }) {
+    const listado = await obtenerPendientesClinicos();
+    const pendiente = listado.datos.find((p) =>
+        p.id_mascota === id_mascota && p.tipo === tipo
+        && (tipo === 'sin_consulta' || p.id_registro === id_registro)
+    );
+    if (!pendiente) {
+        throw new ErrorHttp(404, 'El pendiente ya no existe o la información clínica fue actualizada');
+    }
+    return pendiente;
+}
+
+module.exports = {
+    listar,
+    listarGlobal,
+    obtenerPendientesClinicos,
+    obtenerPendienteParaIA,
+    exigirPersonal,
+};

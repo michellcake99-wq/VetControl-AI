@@ -2,6 +2,7 @@ import { Navigate, Route, Routes } from 'react-router-dom';
 import Layout from './components/Layout.jsx';
 import PaginaPublica from './pages/PaginaPublica.jsx';
 import Inicio from './pages/Inicio.jsx';
+import PendientesClinicos from './pages/PendientesClinicos.jsx';
 import EnConstruccion from './pages/EnConstruccion.jsx';
 import MiPerfil from './pages/MiPerfil.jsx';
 import Notificaciones from './pages/Notificaciones.jsx';
@@ -62,6 +63,11 @@ export default function App() {
       >
         <Route path="/inicio" element={<Inicio />} />
         <Route path="/acceso-denegado" element={<AccesoDenegado />} />
+        {/* Ep6-Hu3: información clínica pendiente para el personal veterinario */}
+        <Route
+          path="/pendientes-clinicos"
+          element={soloPara(PERSONAL_CLINICA, <PendientesClinicos />)}
+        />
 
         {/* Ep3-Hu11: mascotas (el propietario solo ve y edita las suyas) */}
         <Route path="/mascotas" element={<Mascotas />} />
