@@ -9,6 +9,7 @@ import { descargarPDF } from '../utils/pdf.js';
 import { ESTADOS_TRATAMIENTO } from '../utils/consultas.js';
 import Alerta from '../components/Alerta.jsx';
 import CargandoInline from '../components/CargandoInline.jsx';
+import SeguimientoTratamiento from '../components/historia/SeguimientoTratamiento.jsx';
 import {
   EncabezadoDocumento,
   DatosPropietarioPaciente,
@@ -271,6 +272,12 @@ export default function HojaConsulta() {
               </tbody>
             </table>
           )}
+          {consulta.tratamientos.map((tratamiento) => (
+            <SeguimientoTratamiento
+              key={tratamiento.id_tratamiento}
+              tratamiento={tratamiento}
+            />
+          ))}
         </section>
 
         <div className="formato__firma formato__evitar-corte">

@@ -303,26 +303,56 @@ async function actualizarTratamiento(req, res) {
 // ------------------------------------------------------------------
 
 // GET /api/tratamientos/:id/evoluciones
+// El propietario autorizado y el personal veterinario pueden consultar las notas.
+// Se devuelven en orden cronológico e incluyen el nombre de quien las registró.
 async function listarEvoluciones(req, res) {
     const t = await obtenerTratamientoAutorizado(Number(req.params.id), req.usuario);
     const { rows } = await query(
-        'SELECT * FROM evoluciones_tratamiento WHERE id_tratamiento = $1 ORDER BY fecha DESC',
+        `SELECT e.*,
+                u.nombre AS autor_nombre,
+                u.apellido AS autor_apellido
+           FROM evoluciones_tratamiento e
+           JOIN usuarios u ON u.id_usuario = e.id_usuario
+          WHERE e.id_tratamiento = $1
+          ORDER BY e.fecha ASC, e.id_evolucion ASC`,
         [t.id_tratamiento]
     );
     res.json(rows);
 }
 
-// POST /api/tratamientos/:id/evoluciones   (propietario dueño de la mascota)
+// POST /api/tratamientos/:id/evoluciones (solo el propietario de la mascota)
 async function crearEvolucion(req, res) {
     const t = await obtenerTratamientoAutorizado(Number(req.params.id), req.usuario);
-    if (t.estado !== 'activo') throw new ErrorHttp(409, 'Solo se puede registrar evolución en tratamientos activos');
-    const { estado_general, dosis_aplicada, descripcion } = req.body;
+    if (t.estado !== 'activo') {
+        throw new ErrorHttp(409, 'Solo se puede registrar evolución en tratamientos activos');
+    }
+
+    const {
+        estado_general = null,
+        dosis_aplicada = true,
+        descripcion,
+    } = req.body;
+
+    // El autor procede de la sesión autenticada y la fecha se genera en PostgreSQL.
     const { rows } = await query(
-        `INSERT INTO evoluciones_tratamiento (id_tratamiento, id_usuario, estado_general, dosis_aplicada, descripcion)
-         VALUES ($1, $2, $3, $4, $5) RETURNING *`,
+        `INSERT INTO evoluciones_tratamiento
+            (id_tratamiento, id_usuario, estado_general, dosis_aplicada, descripcion)
+         VALUES ($1, $2, $3, $4, $5)
+         RETURNING *`,
         [t.id_tratamiento, req.usuario.id_usuario, estado_general, dosis_aplicada, descripcion]
     );
-    res.status(201).json(rows[0]);
+
+    const { rows: seguimiento } = await query(
+        `SELECT e.*,
+                u.nombre AS autor_nombre,
+                u.apellido AS autor_apellido
+           FROM evoluciones_tratamiento e
+           JOIN usuarios u ON u.id_usuario = e.id_usuario
+          WHERE e.id_evolucion = $1`,
+        [rows[0].id_evolucion]
+    );
+
+    res.status(201).json(seguimiento[0]);
 }
 
 // ------------------------------------------------------------------
