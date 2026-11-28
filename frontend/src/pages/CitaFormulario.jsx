@@ -195,7 +195,10 @@ export default function CitaFormulario() {
         id_mascota: Number(valores.id_mascota),
         id_veterinario: Number(valores.id_veterinario),
         fecha_hora: fechaHoraClinica(valores.fecha, valores.hora),
-        duracion_min: Number(valores.duracion_min),
+        // La duración la define el tipo de consulta; solo el personal puede ajustarla
+        ...(esPropietario
+          ? {}
+          : { duracion_min: Number(valores.duracion_min) }),
         motivo: valores.motivo.trim(),
         tipo_consulta: valores.tipo_consulta,
       });
@@ -321,7 +324,7 @@ export default function CitaFormulario() {
                     className="tipo-consulta"
                     aria-pressed={valores.tipo_consulta === valor}
                     onClick={() => {
-                      // Al elegir el tipo se sugiere su duración (se puede cambiar)
+                      // Al elegir el tipo se fija su duración (el personal puede cambiarla)
                       setValores((v) => ({
                         ...v,
                         tipo_consulta: valor,
@@ -352,20 +355,32 @@ export default function CitaFormulario() {
               />
               {error('fecha')}
             </div>
-            <div className="campo">
-              <label htmlFor="cita-duracion">Duración</label>
-              <select
-                id="cita-duracion"
-                value={valores.duracion_min}
-                onChange={(e) => cambiar('duracion_min', e.target.value)}
-              >
-                {DURACIONES.map((d) => (
-                  <option key={d} value={d}>
-                    {d} minutos
-                  </option>
-                ))}
-              </select>
-            </div>
+            {esPropietario ? (
+              // El propietario no elige cuánto dura: depende del tipo de consulta
+              <div className="campo">
+                <span className="campo__etiqueta">Duración estimada</span>
+                <p className="cita-duracion-fija">
+                  {valores.tipo_consulta
+                    ? `${valores.duracion_min} minutos`
+                    : 'Elige el tipo de consulta'}
+                </p>
+              </div>
+            ) : (
+              <div className="campo">
+                <label htmlFor="cita-duracion">Duración</label>
+                <select
+                  id="cita-duracion"
+                  value={valores.duracion_min}
+                  onChange={(e) => cambiar('duracion_min', e.target.value)}
+                >
+                  {DURACIONES.map((d) => (
+                    <option key={d} value={d}>
+                      {d} minutos
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
           </div>
 
           <fieldset className={`${clase('hora')} grupo-horas`}>

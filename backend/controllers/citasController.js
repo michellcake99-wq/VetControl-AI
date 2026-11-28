@@ -2,6 +2,7 @@ const { query, enTransaccion, construirInsert } = require('../utils/baseDatos');
 const { ErrorHttp, noEncontrado, sinPermiso } = require('../utils/errores');
 const { paginar, respuestaPaginada } = require('../utils/paginacion');
 const { obtenerMascotaAutorizada } = require('../utils/acceso');
+const { DURACION_POR_TIPO } = require('../validators/citasEsquemas');
 const { sinRomper, sincronizarRecordatorioCita, avisarCitaSolicitada, avisarCambioEstadoCita } = require('../utils/notificaciones');
 
 // Las citas se agendan en hora de Colombia/Ecuador (UTC-5, sin horario de verano)
@@ -61,7 +62,11 @@ async function verificarVeterinarioActivo(idVeterinario) {
 
 // POST /api/citas
 async function crear(req, res) {
-  const { id_mascota, id_veterinario, fecha_hora, duracion_min, motivo, tipo_consulta } = req.body;
+  const { id_mascota, id_veterinario, fecha_hora, motivo, tipo_consulta } = req.body;
+  // La duración depende del tipo de consulta. Solo el personal de la clínica puede ajustarla;
+  // si un propietario envía otra, se ignora.
+  const duracion_min =
+    req.usuario.rol !== 'propietario' && req.body.duracion_min ? req.body.duracion_min : DURACION_POR_TIPO[tipo_consulta];
 
   // El propietario solo agenda para sus mascotas (403) y un veterinario solo en su propia agenda
   const mascota = await obtenerMascotaAutorizada(id_mascota, req.usuario);

@@ -4282,3 +4282,17 @@ a.pendiente--vencido:hover {
     grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 }
+
+/* Duración de la cita que ve el propietario: la define el tipo de consulta, no se elige */
+.cita-duracion-fija {
+  display: flex;
+  align-items: center;
+  min-height: 44px;
+  margin: 0;
+  padding: 0 14px;
+  border: 1px dashed var(--c-borde);
+  border-radius: 12px;
+  background: var(--c-panel);
+  font-weight: 700;
+  color: var(--c-primario);
+}
