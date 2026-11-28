@@ -220,13 +220,15 @@ Todas las rutas exigen el token JWT. Las fechas se envían en formato ISO 8601 c
 ```json
 POST /api/citas
 { "id_mascota": 1, "id_veterinario": 1, "fecha_hora": "2026-11-20T10:30:00-05:00",
-  "duracion_min": 30, "motivo": "Vacuna anual", "tipo_consulta": "vacunacion" }
+  "motivo": "Vacuna anual", "tipo_consulta": "vacunacion" }
 
 PUT /api/citas/5/estado
 { "estado": "atendida", "observaciones": "Sin novedades" }
 ```
 
-`duracion_min` es opcional (por defecto 30; entre 10 y 240). `tipo_consulta` es opcional (por defecto `consulta_general`; migración `006`): `consulta_general`, `vacunacion`, `control`, `desparasitacion`, `cirugia`, `urgencia` u `otro`.
+`tipo_consulta` es opcional (por defecto `consulta_general`; migración `006`): `consulta_general`, `vacunacion`, `control`, `desparasitacion`, `cirugia`, `urgencia` u `otro`.
+
+**Duración:** la define el tipo de consulta, no quien pide la cita: consulta general 30 min, vacunación 15, control 30, desparasitación 15, cirugía 60, urgencia 30 y otro 30. El propietario no elige la duración: si envía `duracion_min` se ignora. El veterinario y el administrador sí pueden ajustarla al agendar con `duracion_min` (entre 10 y 240); si no la envían se usa la del tipo. La duración del tipo es la que se usa para detectar cruces de horario.
 
 La cita que pide el propietario nace con estado `programada` (la «solicitada» de los criterios de la historia) y espera la confirmación del veterinario. La que agenda el veterinario (en su propia agenda) o el administrador nace ya `confirmada`.
 

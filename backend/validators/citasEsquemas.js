@@ -22,12 +22,26 @@ const TIPOS_CONSULTA = [
   'otro',
 ];
 
+// Duración (en minutos) que tiene cada tipo de consulta. La define la clínica, no quien pide la cita:
+// el propietario no elige cuánto dura, solo el tipo de consulta. El personal (veterinario o
+// administrador) puede ajustarla al agendar, por ejemplo para una cirugía más larga.
+const DURACION_POR_TIPO = {
+  consulta_general: 30,
+  vacunacion: 15,
+  control: 30,
+  desparasitacion: 15,
+  cirugia: 60,
+  urgencia: 30,
+  otro: 30,
+};
+
 const citaCrear = z
   .object({
     id_mascota: z.number({ message: 'Es obligatorio' }).int().positive(),
     id_veterinario: z.number({ message: 'Es obligatorio' }).int().positive(),
     fecha_hora: fechaHora,
-    duracion_min: z.number().int().min(10, 'Mínimo 10 minutos').max(240, 'Máximo 240 minutos').default(30),
+    // Opcional: si no se envía (o la pide un propietario) se usa la duración del tipo de consulta
+    duracion_min: z.number().int().min(10, 'Mínimo 10 minutos').max(240, 'Máximo 240 minutos').optional(),
     motivo: z.string().trim().min(1, 'Es obligatorio').max(200, 'Máximo 200 caracteres'),
     tipo_consulta: z.enum(TIPOS_CONSULTA, { message: 'Tipo de consulta inválido' }).default('consulta_general'),
   })
@@ -60,4 +74,4 @@ const citaOcupados = z.object({
   fecha: fechaDia,
 });
 
-module.exports = { ESTADOS_CITA, TIPOS_CONSULTA, citaCrear, citaEstado, citaListado, citaOcupados };
+module.exports = { ESTADOS_CITA, TIPOS_CONSULTA, DURACION_POR_TIPO, citaCrear, citaEstado, citaListado, citaOcupados };
