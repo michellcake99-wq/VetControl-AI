@@ -6,10 +6,16 @@ const { estadosDeAtencion } = require('../utils/atencion');
 
 /**
  * Conversación visible solo para sus dos participantes (el propietario y el veterinario).
+ * Devuelve también el id_usuario de cada uno (usuario_propietario / usuario_veterinario),
+ * que usa el chat en tiempo real para entregarles los mensajes (Ep8-Hu2).
  */
 async function obtenerConversacionAutorizada(idConversacion, usuario) {
     const { rows } = await query(
-        'SELECT * FROM conversaciones WHERE id_conversacion = $1',
+        `SELECT c.*, p.id_usuario AS usuario_propietario, v.id_usuario AS usuario_veterinario
+           FROM conversaciones c
+           JOIN propietarios p ON p.id_propietario = c.id_propietario
+           JOIN veterinarios v ON v.id_veterinario = c.id_veterinario
+          WHERE c.id_conversacion = $1`,
         [idConversacion]
     );
     const conversacion = rows[0];
@@ -67,14 +73,16 @@ async function listarVeterinarios(_req, res) {
     res.json(rows.map((v) => ({ ...v, estado_atencion: estados[v.id_veterinario] })));
 }
 
-// GET /api/conversaciones — conversaciones del usuario, con su último mensaje
+// GET /api/conversaciones — conversaciones del usuario, con su último mensaje y los no leídos (Ep8-Hu2)
 async function listar(req, res) {
-    const { id_propietario = null, id_veterinario = null } = req.usuario;
+    const { id_usuario, id_propietario = null, id_veterinario = null } = req.usuario;
     const { rows } = await query(
         `SELECT c.id_conversacion, c.id_propietario, c.id_veterinario, c.id_mascota, c.fecha_registro,
                 m.nombre AS nombre_mascota,
-                CASE WHEN c.id_propietario = $1 THEN uv.nombre || ' ' || uv.apellido
+                CASE WHEN c.id_propietario = $2 THEN uv.nombre || ' ' || uv.apellido
                      ELSE up.nombre || ' ' || up.apellido END AS nombre_contacto,
+                (SELECT count(*)::int FROM mensajes x
+                  WHERE x.id_conversacion = c.id_conversacion AND NOT x.leido AND x.id_remitente <> $1) AS no_leidos,
                 ultimo.mensaje AS ultimo_mensaje
            FROM conversaciones c
            JOIN propietarios p ON p.id_propietario = c.id_propietario
@@ -88,9 +96,9 @@ async function listar(req, res) {
                   FROM mensajes x WHERE x.id_conversacion = c.id_conversacion
                  ORDER BY x.fecha_envio DESC, x.id_mensaje DESC LIMIT 1
            ) ultimo ON TRUE
-          WHERE c.id_propietario = $1 OR c.id_veterinario = $2
+          WHERE c.id_propietario = $2 OR c.id_veterinario = $3
           ORDER BY COALESCE(ultimo.fecha_envio, c.fecha_registro) DESC`,
-        [id_propietario, id_veterinario]
+        [id_usuario, id_propietario, id_veterinario]
     );
     // Ep8-Hu4: el propietario ve el estado de atención de cada veterinario con el que conversa
     if (req.usuario.rol !== 'propietario') return res.json(rows);
@@ -163,7 +171,18 @@ async function listarMensajes(req, res) {
     res.json({ datos: rows.slice(0, limite).reverse(), hay_mas: hayMas });
 }
 
+// PUT /api/conversaciones/:id/leidos — al abrir la conversación se marcan como leídos los mensajes recibidos
+async function marcarLeidos(req, res) {
+    const conversacion = await obtenerConversacionAutorizada(Number(req.params.id), req.usuario);
+    const resultado = await query(
+        `UPDATE mensajes SET leido = TRUE
+          WHERE id_conversacion = $1 AND id_remitente <> $2 AND NOT leido`,
+        [conversacion.id_conversacion, req.usuario.id_usuario]
+    );
+    res.json({ actualizados: resultado.rowCount });
+}
+
 module.exports = {
     obtenerConversacionAutorizada, verificarPuedeEscribir, guardarMensaje,
-    listarVeterinarios, listar, crear, listarMensajes,
+    listarVeterinarios, listar, crear, listarMensajes, marcarLeidos,
 };

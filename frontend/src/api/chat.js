@@ -44,6 +44,8 @@ export const chatApi = {
     const qs = filtros.toString();
     return pedir('GET', `/conversaciones/${id}/mensajes${qs ? `?${qs}` : ''}`);
   },
+  // Ep8-Hu2: al abrir la conversación, lo recibido pasa a «leído»
+  marcarLeidos: (id) => pedir('PUT', `/conversaciones/${id}/leidos`),
 };
 
 /** Socket del chat: autentica con el mismo token JWT. */

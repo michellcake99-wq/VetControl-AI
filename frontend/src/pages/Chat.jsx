@@ -30,6 +30,15 @@ const MAX_CARACTERES = 1000;
 
 // Ep8-Hu3: el historial se carga por páginas; al llegar arriba se piden los mensajes anteriores
 const UMBRAL_SCROLL = 60;
+// Ep8-Hu2: si el usuario está cerca del final, un mensaje nuevo lo lleva hasta abajo;
+// si está leyendo mensajes antiguos, no se le mueve la pantalla.
+const CERCA_DEL_FINAL = 120;
+
+/** Junta dos listas de mensajes sin repetir ninguno y en orden cronológico. */
+const fusionar = (a, b) => {
+  const porId = new Map([...a, ...b].map((m) => [m.id_mensaje, m]));
+  return [...porId.values()].sort((x, y) => x.id_mensaje - y.id_mensaje);
+};
 
 export default function Chat() {
   const token = obtenerToken();
@@ -70,6 +79,13 @@ function SalaChat({ token, yo }) {
   // Qué hacer con el scroll tras cambiar los mensajes: ir al final (abrir o enviar)
   // o conservar la posición al agregar mensajes antiguos arriba.
   const scrollRef = useRef(null);
+  // Ep8-Hu2: los listeners del socket se crean una sola vez y necesitan los datos actuales
+  const conversacionesRef = useRef([]);
+  const mensajesRef = useRef([]);
+  useEffect(() => {
+    conversacionesRef.current = conversaciones;
+    mensajesRef.current = mensajes;
+  }, [conversaciones, mensajes]);
 
   const cargarConversaciones = useCallback(
     () =>
@@ -90,8 +106,14 @@ function SalaChat({ token, yo }) {
       const pagina = await chatApi.mensajes(id);
       if (activaRef.current !== id) return; // el usuario ya abrió otra conversación
       scrollRef.current = 'final';
-      setMensajes(pagina.datos);
+      // Se fusiona por si ya llegó algún mensaje en tiempo real mientras se cargaba
+      setMensajes((ms) => fusionar(ms, pagina.datos));
       setHayMas(pagina.hay_mas);
+      // Ep8-Hu2: al abrir la conversación lo recibido pasa a «leído»
+      await chatApi.marcarLeidos(id);
+      setConversaciones((cs) =>
+        cs.map((c) => (c.id_conversacion === id ? { ...c, no_leidos: 0 } : c))
+      );
     } catch (e) {
       if (activaRef.current === id) setError(e.message);
     }
@@ -132,8 +154,66 @@ function SalaChat({ token, yo }) {
       // Al (re)conectar se pide todo de nuevo: pudo cambiar algo mientras no había conexión
       setPresencia({});
       cargarConversaciones();
+      // Ep8-Hu2: se recupera lo que llegó mientras no había conexión
+      const id = activaRef.current;
+      if (id) {
+        chatApi
+          .mensajes(id)
+          .then((pagina) => {
+            if (activaRef.current !== id) return;
+            const ultimoConocido = mensajesRef.current.at(-1)?.id_mensaje ?? 0;
+            const sinContinuidad =
+              pagina.hay_mas && pagina.datos[0]?.id_mensaje > ultimoConocido;
+            // Si llegaron más mensajes de los que caben en una página, se empieza de nuevo desde los recientes
+            scrollRef.current = 'final';
+            setMensajes((ms) =>
+              sinContinuidad ? pagina.datos : fusionar(ms, pagina.datos)
+            );
+            if (sinContinuidad) setHayMas(pagina.hay_mas);
+            return chatApi.marcarLeidos(id);
+          })
+          .catch(() => {});
+      }
     });
-    socket.on('disconnect', () => setConexion('conectando'));
+    socket.on('disconnect', () => setConexion('reconectando'));
+    // Ep8-Hu2: mensaje recibido en tiempo real (también llega el que uno mismo envía desde otra pestaña)
+    socket.on('nuevo_mensaje', (m) => {
+      const esMio = m.id_remitente === yo.id_usuario;
+      const abierta = m.id_conversacion === activaRef.current;
+
+      if (abierta) {
+        const lista = listaMensajesRef.current;
+        const cerca =
+          !lista ||
+          lista.scrollHeight - lista.scrollTop - lista.clientHeight <
+            CERCA_DEL_FINAL;
+        scrollRef.current = cerca || esMio ? 'final' : null;
+        setMensajes((ms) => fusionar(ms, [m]));
+        if (!esMio) chatApi.marcarLeidos(m.id_conversacion).catch(() => {});
+      }
+      // Conversación que todavía no está en la lista (p. ej. el primer mensaje que recibe el veterinario)
+      if (
+        !conversacionesRef.current.some(
+          (c) => c.id_conversacion === m.id_conversacion
+        )
+      ) {
+        cargarConversaciones();
+        return;
+      }
+      setConversaciones((cs) =>
+        ordenarConversaciones(
+          cs.map((c) =>
+            c.id_conversacion === m.id_conversacion
+              ? {
+                  ...c,
+                  ultimo_mensaje: m,
+                  no_leidos: abierta || esMio ? c.no_leidos : c.no_leidos + 1,
+                }
+              : c
+          )
+        )
+      );
+    });
     // Ep8-Hu4: estado del veterinario en tiempo real
     socket.on('estados_veterinarios', (lista) =>
       setPresencia(
@@ -145,11 +225,12 @@ function SalaChat({ token, yo }) {
     );
     socket.on('horario_actualizado', () => cargarConversaciones());
     socket.on('connect_error', (e) => {
-      if (!socket.active) setError(`${e.message}. Vuelve a iniciar sesión.`); // token inválido o vencido
+      if (socket.active) setConexion('reconectando');
+      else setError(`${e.message}. Vuelve a iniciar sesión.`); // token inválido o vencido
     });
 
     return () => socket.disconnect();
-  }, [token, cargarConversaciones]);
+  }, [token, yo.id_usuario, cargarConversaciones]);
   // El horario de atención se vuelve a evaluar cada 30 segundos (por si empieza o termina mientras tanto)
   useEffect(() => {
     const t = setInterval(() => setAhora(new Date()), 30000);
@@ -178,7 +259,8 @@ function SalaChat({ token, yo }) {
         .emitWithAck('enviar_mensaje', { id_conversacion: activa, contenido });
       if (r.error) return setError(r.error);
       scrollRef.current = 'final';
-      setMensajes((ms) => [...ms, r.mensaje]);
+      // El mismo mensaje también llega por 'nuevo_mensaje': fusionar evita mostrarlo dos veces
+      setMensajes((ms) => fusionar(ms, [r.mensaje]));
       if (r.aviso)
         setAvisos((a) => ({ ...a, [r.mensaje.id_mensaje]: r.aviso }));
       // La conversación con el mensaje más reciente sube al primer lugar de la lista
@@ -225,7 +307,7 @@ function SalaChat({ token, yo }) {
         <h1 className="saludo__titulo">Mensajes</h1>
         {conexion !== 'conectado' && (
           <span className="chat__estado" role="status">
-            Conectando…
+            {conexion === 'conectando' ? 'Conectando…' : 'Reconectando…'}
           </span>
         )}
       </header>
@@ -309,6 +391,14 @@ function SalaChat({ token, yo }) {
                       {c.ultimo_mensaje?.contenido ?? 'Sin mensajes'}
                     </span>
                   </span>
+                  {c.no_leidos > 0 && (
+                    <span
+                      className="chat__no-leidos"
+                      aria-label={`${c.no_leidos} sin leer`}
+                    >
+                      {c.no_leidos}
+                    </span>
+                  )}
                 </button>
               </li>
             ))}
@@ -327,7 +417,11 @@ function SalaChat({ token, yo }) {
                 <button
                   type="button"
                   className="chat__volver"
-                  onClick={() => setActiva(null)}
+                  onClick={() => {
+                    // Ya no está mirando la conversación: lo que llegue cuenta como no leído
+                    activaRef.current = null;
+                    setActiva(null);
+                  }}
                   aria-label="Volver a las conversaciones"
                 >
                   <ArrowLeft size={20} />

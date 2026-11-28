@@ -15,6 +15,9 @@ const {
 // Ep8-Hu5: el chat es solo entre un propietario y un veterinario
 const ROLES_CHAT = ['propietario', 'veterinario'];
 
+// Ep8-Hu2: cada usuario entra a su propia sala; así recibe sus mensajes en todas sus pestañas abiertas
+const salaUsuario = (idUsuario) => `usuario:${idUsuario}`;
+
 /**
  * Carga el perfil actualizado desde la base de datos (rol, id_propietario / id_veterinario)
  * y comprueba que la cuenta siga activa y que su rol pueda usar el chat.
@@ -42,12 +45,14 @@ async function seguirVeterinariosDelPropietario(socket) {
 }
 
 /**
- * Chat (Ep8-Hu1: envío de mensajes · Ep8-Hu5: restricción según el rol).
+ * Chat (Ep8-Hu1: envío de mensajes · Ep8-Hu2: recepción en tiempo real · Ep8-Hu5: restricción según el rol).
  *
  * Conexión:  io(url, { auth: { token } })  — el mismo JWT del login.
  * Cliente -> servidor:  'enviar_mensaje' { id_conversacion, contenido },
  *                       ack({ mensaje, aviso? } | { error, estado })   estado 403 = no permitido
  *                       (aviso: el propietario escribió fuera del horario de atención del veterinario)
+ * Servidor -> cliente:  'nuevo_mensaje' mensaje guardado; le llega al propietario y al veterinario de la
+ *                       conversación (en todas sus pestañas abiertas), sin tener que recargar.
  *
  * Ep8-Hu4: estado de atención del veterinario en tiempo real.
  * Un veterinario está «en línea» mientras tenga el chat abierto. Los propietarios reciben:
@@ -71,6 +76,7 @@ function iniciarChat(io) {
     });
 
     io.on('connection', (socket) => {
+        socket.join(salaUsuario(socket.data.usuario.id_usuario));
         // Ep8-Hu4: presencia del veterinario (se registra de inmediato, antes de cualquier consulta)
         const { id_veterinario: idVeterinarioConectado, rol } = socket.data.usuario;
         if (rol === 'veterinario' && idVeterinarioConectado) {
@@ -131,6 +137,10 @@ function iniciarChat(io) {
                 await verificarPuedeEscribir(conversacion, usuario);
                 // Solo se guarda si pasó todas las validaciones anteriores
                 const mensaje = await guardarMensaje(id_conversacion, usuario.id_usuario, contenido);
+
+                // Ep8-Hu2: el mensaje le llega al instante a los dos participantes
+                io.to([salaUsuario(conversacion.usuario_propietario), salaUsuario(conversacion.usuario_veterinario)])
+                    .emit('nuevo_mensaje', mensaje);
 
                 // Ep8-Hu4: si el propietario escribe fuera del horario de atención se le avisa
                 let aviso = null;
