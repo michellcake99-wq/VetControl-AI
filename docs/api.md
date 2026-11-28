@@ -125,8 +125,8 @@ POST /api/veterinarios/1/horarios
 | POST | `/consultas/:id/tratamientos` | veterinario |
 | GET | `/historias/:id/tratamientos?estado=activo` | todos |
 | PUT | `/tratamientos/:id` | veterinario (p. ej. `{"estado": "finalizado"}`) |
-| GET | `/tratamientos/:id/evoluciones` | todos |
-| POST | `/tratamientos/:id/evoluciones` | propietario dueño de la mascota |
+| GET | `/tratamientos/:id/evoluciones` | todos — notas de seguimiento en orden cronológico (ver Ep5-Hu5) |
+| POST | `/tratamientos/:id/evoluciones` | propietario dueño de la mascota, solo en tratamientos activos (ver Ep5-Hu5) |
 | GET | `/historias/:id/vacunas` | todos (carné en orden cronológico) |
 | POST | `/historias/:id/vacunas` | veterinario (ver Ep4-Hu1) |
 
@@ -151,8 +151,31 @@ POST /api/consultas/1/tratamientos
   "via": "oral", "fecha_inicio": "2026-11-10", "fecha_fin": "2026-11-20" }
 
 POST /api/tratamientos/1/evoluciones      (como propietario)
-{ "estado_general": 4, "dosis_aplicada": true, "descripcion": "Ya no cojea" }
+{ "descripcion": "Ya no cojea" }
 ```
+
+## Seguimiento de tratamientos (Ep5-Hu5)
+
+El propietario deja notas sobre cómo evoluciona su mascota durante un tratamiento, para que el veterinario las vea sin esperar a la siguiente consulta.
+
+| Método | Ruta | Quién |
+|---|---|---|
+| GET | `/tratamientos/:id/evoluciones` | propietario de la mascota y personal veterinario — notas de la más antigua a la más reciente |
+| POST | `/tratamientos/:id/evoluciones` | propietario de la mascota |
+
+```json
+POST /api/tratamientos/1/evoluciones
+{ "descripcion": "Hoy comió mejor y ya no cojea" }
+→ 201 { "id_evolucion": 2, "id_tratamiento": 1, "fecha": "2026-11-27T15:04:05.000Z",
+        "descripcion": "Hoy comió mejor y ya no cojea", "estado_general": null,
+        "dosis_aplicada": true, "autor_nombre": "Ana", "autor_apellido": "Torres", ... }
+```
+
+- `descripcion` es **obligatoria** (texto no vacío, máximo 2000 caracteres); `estado_general` (1 a 5) y `dosis_aplicada` (por defecto `true`) son opcionales.
+- La **fecha y la hora** las guarda el servidor y el **autor** es el usuario de la sesión: no se pueden enviar desde el cliente.
+- Solo se aceptan notas en tratamientos **activos** de las mascotas del propietario: un tratamiento finalizado o suspendido responde `409`; el de otro propietario, el veterinario y el administrador reciben `403`; uno inexistente, `404`.
+- Las notas **no se pueden editar ni eliminar**: no existen rutas para hacerlo y, desde la migración `012`, un trigger de la base de datos lo impide. Tampoco se puede borrar un tratamiento que tenga notas (migración `011`, `ON DELETE RESTRICT`).
+- **Bases que ya tienen datos (Supabase):** ejecutar `database/migraciones/011_ep5-hu5_seguimiento_tratamientos.sql` y después `012_ep5-hu5_notas_inmutables.sql`. No borran nada y se pueden ejecutar más de una vez.
 
 ## Vacunas (Ep4-Hu1)
 

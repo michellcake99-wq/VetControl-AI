@@ -21,7 +21,7 @@ DROP TABLE IF EXISTS tokens_recuperacion, intentos_login, interacciones_ia, audi
 DROP TYPE IF EXISTS sexo_mascota, estado_cita, estado_tratamiento,
   tipo_recordatorio, estado_recordatorio CASCADE;
 DROP FUNCTION IF EXISTS fn_actualizar_fecha, fn_crear_perfil, fn_crear_historia,
-  fn_validar_traslape_horario, fn_auditar CASCADE;
+  fn_validar_traslape_horario, fn_auditar, fn_proteger_evoluciones CASCADE;
 
 -- ---------------------------------------------------------------------
 --  Tipos enumerados
@@ -455,6 +455,19 @@ $$ LANGUAGE plpgsql;
 
 CREATE TRIGGER trg_horario_traslape BEFORE INSERT OR UPDATE ON horarios_veterinario
 FOR EACH ROW EXECUTE FUNCTION fn_validar_traslape_horario();
+
+-- ---------------------------------------------------------------------
+--  Ep5-Hu5: las notas de seguimiento de un tratamiento no se editan ni se eliminan
+-- ---------------------------------------------------------------------
+CREATE FUNCTION fn_proteger_evoluciones() RETURNS trigger AS $$
+BEGIN
+  RAISE EXCEPTION 'Las notas de seguimiento no se pueden modificar ni eliminar'
+    USING ERRCODE = '23001';   -- restrict_violation
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trg_evoluciones_inmutables BEFORE UPDATE OR DELETE ON evoluciones_tratamiento
+FOR EACH ROW EXECUTE FUNCTION fn_proteger_evoluciones();
 
 -- ---------------------------------------------------------------------
 --  Trigger genérico de auditoría
