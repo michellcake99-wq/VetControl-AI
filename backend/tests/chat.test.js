@@ -143,7 +143,7 @@ describe('Envío de mensajes (Socket.IO)', () => {
         expect(ack.mensaje.id_remitente).toBe(2);
 
         const historial = await ana.get(`/api/conversaciones/${idCon}/mensajes`);
-        expect(historial.body.map((m) => m.contenido)).toEqual(['Hola, Max no quiere comer', '¿Desde cuándo?']);
+        expect(historial.body.datos.map((m) => m.contenido)).toEqual(['Hola, Max no quiere comer', '¿Desde cuándo?']);
     });
 
     test('no se envían mensajes vacíos ni de más de 1000 caracteres', async () => {

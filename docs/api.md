@@ -346,16 +346,26 @@ Todas las respuestas de error usan `{"mensaje": "..."}`, igual que el login exis
 | 404 | No existe |
 | 409 | Dato único repetido (correo, documento, microchip) o conflicto de estado |
 
-## Chat (Ep8-Hu1, Ep8-Hu4 y Ep8-Hu5)
+## Chat (Ep8-Hu1, Ep8-Hu3, Ep8-Hu4 y Ep8-Hu5)
 
 | Método | Ruta | Quién |
 |---|---|---|
 | GET | `/conversaciones/veterinarios` | propietario — veterinarios activos a los que puede escribir |
-| GET | `/conversaciones` | propietario o veterinario — sus conversaciones |
+| GET | `/conversaciones` | propietario o veterinario — sus conversaciones, de la más reciente a la más antigua (ver Ep8-Hu3) |
 | POST | `/conversaciones` | propietario — `{ "id_veterinario": 1, "id_mascota": 1 }` (mascota opcional) |
-| GET | `/conversaciones/:id/mensajes` | solo los dos participantes |
+| GET | `/conversaciones/:id/mensajes?antes=&limite=` | solo los dos participantes — historial por páginas (ver Ep8-Hu3) |
 
 Los mensajes se envían por Socket.IO: `io({ auth: { token } })` y el evento `enviar_mensaje` `{ id_conversacion, contenido }`, que responde `{ mensaje }` o `{ error, estado }`.
+
+Historial de conversaciones (Ep8-Hu3):
+
+- `GET /conversaciones` devuelve por conversación `id_conversacion`, `nombre_contacto` (la otra persona), `nombre_mascota` y `ultimo_mensaje` `{ contenido, id_remitente, fecha_envio }` (`null` si aún no hay mensajes). Se ordena por la fecha del último mensaje, de la más reciente a la más antigua; una conversación sin mensajes cuenta con su fecha de creación. Quien no tiene conversaciones recibe `[]`.
+- `GET /conversaciones/:id/mensajes` ya **no** devuelve todos los mensajes sino una página: `{ "datos": [...], "hay_mas": true }`.
+  - Sin parámetros entrega los 30 mensajes más recientes. `limite` (1 a 100, por defecto 30) cambia el tamaño de la página.
+  - `antes=<id_mensaje>` entrega los mensajes anteriores a ese (el más antiguo que ya se tiene). El mensaje debe ser de la misma conversación; si no, responde `400`.
+  - `datos` siempre sale en orden cronológico (del más antiguo al más reciente); `hay_mas` indica si quedan mensajes más antiguos por cargar.
+  - Un parámetro inválido (`limite=0`, `antes=abc`, ...) responde `400`; quien no participa en la conversación recibe `403` y si no existe, `404`.
+- No necesita migración: usa las tablas `conversaciones` y `mensajes`.
 
 Restricciones según el rol (Ep8-Hu5):
 
