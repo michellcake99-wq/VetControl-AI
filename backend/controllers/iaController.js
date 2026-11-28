@@ -18,6 +18,29 @@ Respondes en español, de forma clara, breve y amable.
   ni indiques dosis de medicamentos. Ante síntomas graves o una emergencia, recomienda acudir a la clínica.
 - Si te preguntan algo que no tiene que ver con mascotas, explica con amabilidad que no puedes ayudar con eso.`;
 
+// Cómo debe tratar la IA a cada rol (se añade al contexto de cada consulta)
+const TRATO_POR_ROL = {
+    propietario: 'Es el dueño de una mascota. Háblale con calidez y lenguaje sencillo, sin tecnicismos innecesarios, '
+        + 'y orienta sobre cuidados, citas, vacunas y tratamientos.',
+    veterinario: 'Es un veterinario de la clínica. Trátalo como colega: usa un tono profesional y directo, '
+        + 'con terminología clínica cuando ayude, y ve al grano.',
+    administrador: 'Es parte del equipo administrativo de la clínica. Mantén un tono profesional y orienta sobre '
+        + 'el uso de la plataforma.',
+};
+
+/** Mensaje de sistema con el nombre y el rol de quien consulta, para que la IA lo salude y adapte el tono. */
+async function contextoDelUsuario(usuario) {
+    const { rows } = await query('SELECT nombre FROM usuarios WHERE id_usuario = $1', [usuario.id_usuario]);
+    const nombre = rows[0]?.nombre;
+    const trato = TRATO_POR_ROL[usuario.rol] ?? TRATO_POR_ROL.propietario;
+    return [
+        `La persona que te escribe se llama ${nombre ?? 'usuario'} y su rol en la plataforma es "${usuario.rol}".`,
+        trato,
+        'Si es el primer mensaje o te saluda, salúdala por su nombre de pila (por ejemplo "Hola, Andrés"). '
+            + 'No repitas su nombre en cada respuesta y no inventes datos sobre ella.',
+    ].join('\n');
+}
+
 /** Cuántas consultas hizo el usuario en la ventana de tiempo y cuándo se libera la próxima. */
 async function estadoCupo(idUsuario) {
     const { consultas, minutos } = limite();
@@ -143,7 +166,10 @@ async function consultar(req, res) {
     // Si se indica una mascota, el usuario debe poder verla (el propietario solo las suyas)
     const mascota = idMascota ? await obtenerMascotaAutorizada(idMascota, usuario) : null;
 
-    const mensajes = [{ role: 'system', content: INSTRUCCIONES }];
+    const mensajes = [
+        { role: 'system', content: INSTRUCCIONES },
+        { role: 'system', content: await contextoDelUsuario(usuario) },
+    ];
     if (mascota) mensajes.push({ role: 'system', content: await contextoMascota(mascota) });
     mensajes.push({ role: 'user', content: pregunta });
 

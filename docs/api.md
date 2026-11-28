@@ -330,6 +330,7 @@ POST /api/ia/consultar
 
 - `aviso` (Ep6-Hu5) es el texto que la pantalla muestra bajo cada respuesta para indicar que la generó una IA.
 - `id_mascota` es opcional. Si se envía, la IA recibe como contexto **solo** los datos de esa mascota (antecedentes, últimas consultas, tratamientos activos y vacunas).
+- **Trato según el usuario:** además de las instrucciones base, la IA recibe el nombre de pila y el rol de quien consulta (propietario, veterinario o administrador) para saludarlo por su nombre y adaptar el tono: cercano y sencillo con el propietario, de colega con el veterinario y orientado al uso de la plataforma con el administrador. El nombre se lee de la cuenta en el servidor; no se envía desde el cliente.
 - Cada consulta, exitosa o fallida, se guarda en la tabla `interacciones_ia` (usuario, mascota, pregunta, respuesta, modelo, fecha y error si lo hubo).
 - **Límite por usuario:** `IA_LIMITE_CONSULTAS` consultas cada `IA_VENTANA_MINUTOS` minutos (por defecto 20 cada 60). Al pasarlo responde `429` indicando cuánto falta para volver a consultar. Cuentan todas las consultas, también el resumen de la historia y las que fallan; `GET /ia/cupo` permite mostrar cuántas quedan.
 - **Errores del servicio** (el servidor nunca se detiene): `502` si el proveedor falla o no responde bien, `503` si está saturado o falta configurar la clave, `504` si tarda más de `IA_TIEMPO_MAXIMO_MS`.
@@ -424,4 +425,10 @@ Cuándo se generan:
 
 ## Pantalla del asistente de IA (Ep6-Hu5)
 
-La opción «Asistente IA» del menú (`/asistente`) abre una conversación con el asistente: se elige una mascota (o «Pregunta general»), se escribe la pregunta (3 a 2000 caracteres; Enter envía y Shift+Enter hace un salto de línea) o se toca una sugerencia. Mientras responde se muestra un indicador de «escribiendo», cada respuesta lleva el aviso de que la generó una IA, se muestran las consultas que le quedan al usuario y, si falla, la pregunta se conserva con un botón «Reintentar». El botón «Resumir historial» usa `/ia/resumir-historial`. Usa `/ia/consultar`, `/ia/resumir-historial` y `/ia/cupo`; la conversación vive solo en la pantalla (no se guarda entre sesiones) y cada pregunta se responde de forma independiente: el asistente no recuerda las preguntas anteriores.
+La opción «Asistente IA» del menú (`/asistente`) abre una conversación con el asistente: se elige una mascota (o «Pregunta general»), se escribe la pregunta (3 a 2000 caracteres; Enter envía y Shift+Enter hace un salto de línea) o se toca una sugerencia. Mientras responde se muestra un indicador de «escribiendo», cada respuesta lleva el aviso de que la generó una IA, se muestran las consultas que le quedan al usuario y, si falla, la pregunta se conserva con un botón «Reintentar». El botón «Resumir historial» usa `/ia/resumir-historial`. El saludo («¡Hola, Ana! Soy NubiVet») usa el nombre de la sesión, y el texto de bienvenida, el subtítulo y las sugerencias cambian según el rol. Usa `/ia/consultar`, `/ia/resumir-historial` y `/ia/cupo`; la conversación vive solo en la pantalla (no se guarda entre sesiones) y cada pregunta se responde de forma independiente: el asistente no recuerda las preguntas anteriores.
+
+## Centro de ayuda
+
+El botón «¿Necesitas ayuda?» del menú lateral abre `/ayuda`, disponible para todos los roles con sesión. Es una página del frontend (no usa endpoints nuevos) con un buscador, accesos rápidos y preguntas frecuentes que cambian según el rol. El buscador no distingue mayúsculas ni tildes. El contenido vive en `frontend/src/utils/ayuda.js`.
+
+Los datos de contacto de la clínica (`CONTACTO_CLINICA`: correo, teléfono y horario) están vacíos a propósito: cuando se completen en ese archivo, aparecen solos en el bloque «¿Sigues con dudas?». Mientras estén vacíos, la página solo ofrece el chat y el asistente.

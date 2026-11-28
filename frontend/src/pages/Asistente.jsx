@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Bot, RotateCcw, SendHorizontal, Sparkles } from 'lucide-react';
+import { RotateCcw, SendHorizontal, Sparkles } from 'lucide-react';
 import { api } from '../services/api.js';
-import { rolActual } from '../utils/sesion.js';
+import { obtenerSesion, rolActual } from '../utils/sesion.js';
 import Alerta from '../components/Alerta.jsx';
 import CargandoInline from '../components/CargandoInline.jsx';
 import ResumenIA from '../components/historia/ResumenIA.jsx';
+import nubivet from '../assets/NubiVet.png';
 import './Asistente.css';
 
 // Ep6-Hu5: interfaz de consulta del asistente de inteligencia artificial
@@ -23,7 +24,54 @@ const hora = (valor) =>
     hour12: true,
   }).format(new Date(valor));
 
-function sugerenciasPara(mascota) {
+// Lote C: el texto del asistente se adapta al rol de quien lo usa
+const TEXTOS_POR_ROL = {
+  propietario: {
+    subtitulo:
+      'Pregunta sobre el cuidado de tus mascotas o sobre su historial. Responde con los datos registrados en la clínica.',
+    presentacion:
+      'Tu compañero virtual para resolver dudas sobre el cuidado de tu mascota.',
+    invitacion:
+      'Escribe tu pregunta sobre el cuidado de tu mascota o elige una:',
+  },
+  veterinario: {
+    subtitulo:
+      'Consulta el historial de tus pacientes o resuelve dudas clínicas rápidas. Es un apoyo: el criterio profesional es tuyo.',
+    presentacion:
+      'Tu asistente para revisar historiales y preparar tus consultas más rápido.',
+    invitacion: 'Escribe tu consulta o elige una:',
+  },
+  administrador: {
+    subtitulo:
+      'Resuelve dudas sobre el uso de la plataforma o consulta información de las mascotas de la clínica.',
+    presentacion: 'Tu asistente para resolver dudas sobre VetControl AI.',
+    invitacion: 'Escribe tu pregunta o elige una:',
+  },
+};
+
+function sugerenciasPara(mascota, rol) {
+  if (rol === 'veterinario') {
+    if (!mascota) {
+      return [
+        '¿Qué signos de alerta indican deshidratación en un perro?',
+        '¿Cada cuánto se recomienda desparasitar a un cachorro?',
+        '¿Cómo registro una consulta en VetControl?',
+      ];
+    }
+    return [
+      `Resume el historial de ${mascota.nombre}`,
+      `¿Qué tratamientos tiene activos ${mascota.nombre}?`,
+      `¿Qué vacunas tiene aplicadas ${mascota.nombre}?`,
+      `¿Cuándo fue la última consulta de ${mascota.nombre}?`,
+    ];
+  }
+  if (rol === 'administrador') {
+    return [
+      '¿Cómo funcionan los recordatorios de vacunas?',
+      '¿Cómo se asignan las citas a un veterinario?',
+      '¿Qué datos guarda la historia clínica?',
+    ];
+  }
   if (!mascota) {
     return [
       '¿Cada cuánto debo desparasitar a mi mascota?',
@@ -40,7 +88,11 @@ function sugerenciasPara(mascota) {
 }
 
 export default function Asistente() {
-  const esPropietario = rolActual() === 'propietario';
+  const rol = rolActual();
+  const esPropietario = rol === 'propietario';
+  const textos = TEXTOS_POR_ROL[rol] ?? TEXTOS_POR_ROL.propietario;
+  // Primer nombre de quien usa el asistente (para saludarlo)
+  const nombre = obtenerSesion()?.usuario?.nombre?.trim().split(/\s+/)[0] ?? '';
 
   const [mascotas, setMascotas] = useState(null);
   const [errorMascotas, setErrorMascotas] = useState('');
@@ -182,10 +234,7 @@ export default function Asistente() {
       <div className="encabezado-pagina">
         <div>
           <h1 className="saludo__titulo">Asistente IA</h1>
-          <p className="texto-sec">
-            Pregunta sobre el cuidado de tus mascotas o sobre su historial.
-            Responde con los datos registrados en la clínica.
-          </p>
+          <p className="texto-sec">{textos.subtitulo}</p>
         </div>
       </div>
 
@@ -265,21 +314,28 @@ export default function Asistente() {
             >
               {mensajes.length === 0 && (
                 <li className="asistente__bienvenida">
-                  <span
-                    className="icono-circulo icono-circulo--44"
-                    aria-hidden="true"
-                  >
-                    <Bot size={22} strokeWidth={1.8} />
-                  </span>
-                  <p>
-                    <strong>Hola, soy el asistente de VetControl AI.</strong>
+                  <div className="asistente__presentacion-nubivet">
+                    <div className="asistente__nubivet-globo" role="note">
+                      <strong>
+                        {nombre ? `¡Hola, ${nombre}!` : '¡Hola!'} Soy NubiVet 🐾
+                      </strong>
+                      <span>{textos.presentacion}</span>
+                    </div>
+                    <img
+                      className="asistente__nubivet-imagen"
+                      src={nubivet}
+                      alt="NubiVet, asistente veterinario virtual de VetControl"
+                    />
+                  </div>
+                  <p className="asistente__bienvenida-texto">
+                    <strong>¡Me alegra acompañarte!</strong>
                     <br />
                     {mascota
                       ? `Puedo ayudarte con la información de ${mascota.nombre}. Escribe tu pregunta o elige una:`
-                      : 'Escribe tu pregunta sobre el cuidado de tu mascota o elige una:'}
+                      : textos.invitacion}
                   </p>
                   <div className="asistente__sugerencias">
-                    {sugerenciasPara(mascota).map((s) => (
+                    {sugerenciasPara(mascota, rol).map((s) => (
                       <button
                         key={s}
                         type="button"
@@ -309,11 +365,19 @@ export default function Asistente() {
                     key={m.id}
                     className={`asistente__fila asistente__fila--${mio ? 'usuario' : 'asistente'}`}
                   >
+                    {!mio && (
+                      <img
+                        className="asistente__avatar-respuesta"
+                        src={nubivet}
+                        alt=""
+                        aria-hidden="true"
+                      />
+                    )}
                     <div
                       className={`asistente__burbuja asistente__burbuja--${mio ? 'usuario' : 'asistente'}`}
                     >
                       <span className="sr-only">
-                        {mio ? 'Tú:' : 'Asistente:'}
+                        {mio ? 'Tú:' : 'NubiVet:'}
                       </span>
                       <p>{m.texto}</p>
                       <time dateTime={m.hora}>{hora(m.hora)}</time>
