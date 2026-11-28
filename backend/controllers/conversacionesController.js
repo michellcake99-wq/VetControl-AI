@@ -1,5 +1,6 @@
 const { query } = require('../utils/baseDatos');
-const { noEncontrado, sinPermiso } = require('../utils/errores');
+const { ErrorHttp, noEncontrado, sinPermiso } = require('../utils/errores');
+const esquemas = require('../validators/esquemas');
 const { obtenerMascotaAutorizada } = require('../utils/acceso');
 const { estadosDeAtencion } = require('../utils/atencion');
 
@@ -124,14 +125,42 @@ async function crear(req, res) {
     res.status(201).json(rows[0]);
 }
 
-// GET /api/conversaciones/:id/mensajes — historial de la conversación
+// GET /api/conversaciones/:id/mensajes?antes=<id_mensaje>&limite=30 — historial por páginas (Ep8-Hu3)
+// Sin `antes` devuelve los mensajes más recientes; con `antes`, los inmediatamente anteriores a ese
+// mensaje. Siempre salen en orden cronológico (del más antiguo al más reciente) y `hay_mas`
+// indica si quedan mensajes todavía más antiguos para seguir cargando.
 async function listarMensajes(req, res) {
     const conversacion = await obtenerConversacionAutorizada(Number(req.params.id), req.usuario);
+    const resultado = esquemas.mensajesListar.safeParse(req.query);
+    if (!resultado.success) {
+        const detalles = resultado.error.issues.map((i) => ({ campo: i.path.join('.'), mensaje: i.message }));
+        throw new ErrorHttp(400, 'Datos inválidos', detalles);
+    }
+    const { antes, limite } = resultado.data;
+
+    const parametros = [conversacion.id_conversacion];
+    let corte = '';
+    if (antes) {
+        // El mensaje de referencia debe pertenecer a esta conversación (no se pueden leer otras)
+        const ref = await query(
+            'SELECT 1 FROM mensajes WHERE id_mensaje = $1 AND id_conversacion = $2',
+            [antes, conversacion.id_conversacion]
+        );
+        if (!ref.rows[0]) throw new ErrorHttp(400, 'El mensaje indicado en «antes» no pertenece a esta conversación');
+        // La comparación se hace en SQL para no perder los microsegundos de fecha_envio
+        parametros.push(antes);
+        corte = 'AND (fecha_envio, id_mensaje) < (SELECT fecha_envio, id_mensaje FROM mensajes WHERE id_mensaje = $2)';
+    }
+    parametros.push(limite + 1);   // uno de más para saber si quedan mensajes anteriores
     const { rows } = await query(
-        'SELECT * FROM mensajes WHERE id_conversacion = $1 ORDER BY fecha_envio, id_mensaje',
-        [conversacion.id_conversacion]
+        `SELECT * FROM mensajes
+          WHERE id_conversacion = $1 ${corte}
+          ORDER BY fecha_envio DESC, id_mensaje DESC
+          LIMIT $${parametros.length}`,
+        parametros
     );
-    res.json(rows);
+    const hayMas = rows.length > limite;
+    res.json({ datos: rows.slice(0, limite).reverse(), hay_mas: hayMas });
 }
 
 module.exports = {

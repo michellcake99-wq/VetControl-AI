@@ -36,8 +36,16 @@ export const chatApi = {
   veterinarios: () => pedir('GET', '/conversaciones/veterinarios'),
   misMascotas: () => pedir('GET', '/mascotas?limite=100').then((r) => r.datos),
   crearConversacion: (datos) => pedir('POST', '/conversaciones', datos),
-  mensajes: (id) => pedir('GET', `/conversaciones/${id}/mensajes`),
+  // Ep8-Hu3: historial por páginas -> { datos: [...en orden cronológico], hay_mas }
+  mensajes: (id, { antes, limite } = {}) => {
+    const filtros = new URLSearchParams();
+    if (antes) filtros.set('antes', antes);
+    if (limite) filtros.set('limite', limite);
+    const qs = filtros.toString();
+    return pedir('GET', `/conversaciones/${id}/mensajes${qs ? `?${qs}` : ''}`);
+  },
 };
 
 /** Socket del chat: autentica con el mismo token JWT. */
-export const conectarChat = (token) => io(URL_API || undefined, { auth: { token } });
+export const conectarChat = (token) =>
+  io(URL_API || undefined, { auth: { token } });

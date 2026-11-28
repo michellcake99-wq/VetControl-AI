@@ -1,4 +1,11 @@
-import { Fragment, useCallback, useEffect, useRef, useState } from 'react';
+import {
+  Fragment,
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from 'react';
 import { ArrowLeft, MessageCircle, Plus, SendHorizontal } from 'lucide-react';
 import {
   chatApi,
@@ -7,18 +14,22 @@ import {
   usuarioDelToken,
 } from '../api/chat.js';
 import { estadoHorario, textoProximaAtencion } from '../utils/atencion.js';
+import {
+  cambiaDeDia,
+  etiquetaDia,
+  fechaCompleta,
+  fechaDeLista,
+  formatoHoraChat,
+  ordenarConversaciones,
+} from '../utils/fechasChat.js';
 import EstadoAtencion from '../components/EstadoAtencion.jsx';
 import './Chat.css';
 
 // Ep8-Hu1: envío de mensajes entre propietario y veterinario
 const MAX_CARACTERES = 1000;
 
-const hora = (iso) =>
-  new Intl.DateTimeFormat('es-EC', {
-    hour: 'numeric',
-    minute: '2-digit',
-    hour12: true,
-  }).format(new Date(iso));
+// Ep8-Hu3: el historial se carga por páginas; al llegar arriba se piden los mensajes anteriores
+const UMBRAL_SCROLL = 60;
 
 export default function Chat() {
   const token = obtenerToken();
@@ -41,6 +52,8 @@ function SalaChat({ token, yo }) {
   const [conversaciones, setConversaciones] = useState([]);
   const [activa, setActiva] = useState(null);
   const [mensajes, setMensajes] = useState([]);
+  const [hayMas, setHayMas] = useState(false);
+  const [cargandoMas, setCargandoMas] = useState(false);
   const [texto, setTexto] = useState('');
   const [conexion, setConexion] = useState('conectando');
   const [error, setError] = useState('');
@@ -52,7 +65,11 @@ function SalaChat({ token, yo }) {
   const [avisos, setAvisos] = useState({});
 
   const socketRef = useRef(null);
-  const finRef = useRef(null);
+  const listaMensajesRef = useRef(null);
+  const activaRef = useRef(null);
+  // Qué hacer con el scroll tras cambiar los mensajes: ir al final (abrir o enviar)
+  // o conservar la posición al agregar mensajes antiguos arriba.
+  const scrollRef = useRef(null);
 
   const cargarConversaciones = useCallback(
     () =>
@@ -64,14 +81,45 @@ function SalaChat({ token, yo }) {
   );
 
   const abrir = useCallback(async (id) => {
+    activaRef.current = id;
     setActiva(id);
     setError('');
+    setMensajes([]);
+    setHayMas(false);
     try {
-      setMensajes(await chatApi.mensajes(id));
+      const pagina = await chatApi.mensajes(id);
+      if (activaRef.current !== id) return; // el usuario ya abrió otra conversación
+      scrollRef.current = 'final';
+      setMensajes(pagina.datos);
+      setHayMas(pagina.hay_mas);
     } catch (e) {
-      setError(e.message);
+      if (activaRef.current === id) setError(e.message);
     }
   }, []);
+
+  // Ep8-Hu3: carga la página de mensajes anteriores al más antiguo que ya se ve
+  async function cargarAnteriores() {
+    if (!hayMas || cargandoMas || mensajes.length === 0) return;
+    const id = activa;
+    setCargandoMas(true);
+    try {
+      const pagina = await chatApi.mensajes(id, {
+        antes: mensajes[0].id_mensaje,
+      });
+      if (activaRef.current !== id) return;
+      const lista = listaMensajesRef.current;
+      scrollRef.current = {
+        altura: lista.scrollHeight,
+        arriba: lista.scrollTop,
+      };
+      setMensajes((ms) => [...pagina.datos, ...ms]);
+      setHayMas(pagina.hay_mas);
+    } catch (e) {
+      if (activaRef.current === id) setError(e.message);
+    } finally {
+      setCargandoMas(false);
+    }
+  }
 
   // Conexión con el servidor de chat (valida el token JWT)
   useEffect(() => {
@@ -107,9 +155,17 @@ function SalaChat({ token, yo }) {
     const t = setInterval(() => setAhora(new Date()), 30000);
     return () => clearInterval(t);
   }, []);
-  // Mantener visible el último mensaje
-  useEffect(() => {
-    finRef.current?.scrollIntoView({ block: 'end' });
+  // Al abrir o enviar se muestra el último mensaje; al cargar mensajes antiguos
+  // se mantiene a la vista lo que el usuario estaba leyendo.
+  useLayoutEffect(() => {
+    const lista = listaMensajesRef.current;
+    const accion = scrollRef.current;
+    scrollRef.current = null;
+    if (!lista || !accion) return;
+    lista.scrollTop =
+      accion === 'final'
+        ? lista.scrollHeight
+        : accion.arriba + (lista.scrollHeight - accion.altura);
   }, [mensajes]);
 
   async function enviar(e) {
@@ -121,12 +177,18 @@ function SalaChat({ token, yo }) {
         .timeout(5000)
         .emitWithAck('enviar_mensaje', { id_conversacion: activa, contenido });
       if (r.error) return setError(r.error);
+      scrollRef.current = 'final';
       setMensajes((ms) => [...ms, r.mensaje]);
       if (r.aviso)
         setAvisos((a) => ({ ...a, [r.mensaje.id_mensaje]: r.aviso }));
+      // La conversación con el mensaje más reciente sube al primer lugar de la lista
       setConversaciones((cs) =>
-        cs.map((c) =>
-          c.id_conversacion === activa ? { ...c, ultimo_mensaje: r.mensaje } : c
+        ordenarConversaciones(
+          cs.map((c) =>
+            c.id_conversacion === activa
+              ? { ...c, ultimo_mensaje: r.mensaje }
+              : c
+          )
         )
       );
       setTexto('');
@@ -223,8 +285,19 @@ function SalaChat({ token, yo }) {
                   onClick={() => abrir(c.id_conversacion)}
                 >
                   <span className="chat__item-texto">
-                    <span className="chat__item-nombre">
-                      {c.nombre_contacto}
+                    <span className="chat__item-fila">
+                      <span className="chat__item-nombre">
+                        {c.nombre_contacto}
+                      </span>
+                      {c.ultimo_mensaje && (
+                        <time
+                          className="chat__item-fecha"
+                          dateTime={c.ultimo_mensaje.fecha_envio}
+                          title={fechaCompleta(c.ultimo_mensaje.fecha_envio)}
+                        >
+                          {fechaDeLista(c.ultimo_mensaje.fecha_envio, ahora)}
+                        </time>
+                      )}
                     </span>
                     {c.nombre_mascota && (
                       <span className="chat__item-mascota">
@@ -276,11 +349,43 @@ function SalaChat({ token, yo }) {
                 </div>
               </div>
 
-              <ol className="chat__mensajes">
-                {mensajes.map((m) => {
+              <ol
+                className="chat__mensajes"
+                ref={listaMensajesRef}
+                onScroll={(e) => {
+                  if (e.currentTarget.scrollTop < UMBRAL_SCROLL)
+                    cargarAnteriores();
+                }}
+              >
+                {hayMas && (
+                  <li className="chat__mas">
+                    <button
+                      type="button"
+                      className="chat__mas-boton"
+                      onClick={cargarAnteriores}
+                      disabled={cargandoMas}
+                    >
+                      {cargandoMas ? 'Cargando…' : 'Ver mensajes anteriores'}
+                    </button>
+                  </li>
+                )}
+                {mensajes.length === 0 && !hayMas && (
+                  <li className="chat__dia">
+                    <span>Aún no hay mensajes. Escribe el primero.</span>
+                  </li>
+                )}
+                {mensajes.map((m, i) => {
                   const mio = m.id_remitente === yo.id_usuario;
+                  const nuevoDia =
+                    i === 0 ||
+                    cambiaDeDia(mensajes[i - 1].fecha_envio, m.fecha_envio);
                   return (
                     <Fragment key={m.id_mensaje}>
+                      {nuevoDia && (
+                        <li className="chat__dia">
+                          <span>{etiquetaDia(m.fecha_envio, ahora)}</span>
+                        </li>
+                      )}
                       <li
                         className={`chat__burbuja chat__burbuja--${mio ? 'enviado' : 'recibido'}`}
                       >
@@ -289,7 +394,7 @@ function SalaChat({ token, yo }) {
                         </span>
                         <p>{m.contenido}</p>
                         <time dateTime={m.fecha_envio}>
-                          {hora(m.fecha_envio)}
+                          {formatoHoraChat(m.fecha_envio)}
                         </time>
                       </li>
                       {avisos[m.id_mensaje] && (
@@ -300,7 +405,6 @@ function SalaChat({ token, yo }) {
                     </Fragment>
                   );
                 })}
-                <li ref={finRef} aria-hidden="true" />
               </ol>
 
               {avisoHorario && (

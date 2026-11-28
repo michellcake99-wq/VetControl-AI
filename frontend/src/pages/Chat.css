@@ -331,3 +331,47 @@
   border-radius: var(--r-control);
   list-style: none;
 }
+/* Ep8-Hu3: historial de conversaciones */
+.chat__item-fila {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+.chat__item-fecha {
+  flex-shrink: 0;
+  font-size: 11px;
+  color: var(--c-texto-sec);
+}
+.chat__mas {
+  align-self: center;
+  list-style: none;
+}
+.chat__mas-boton {
+  padding: 6px 14px;
+  border: 1px solid var(--c-borde);
+  border-radius: 999px;
+  background: var(--c-blanco);
+  color: var(--c-primario);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.chat__mas-boton:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+.chat__dia {
+  align-self: center;
+  margin: 6px 0 2px;
+  list-style: none;
+}
+.chat__dia span {
+  display: inline-block;
+  padding: 3px 12px;
+  border-radius: 999px;
+  background: var(--c-panel);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--c-texto-sec);
+}

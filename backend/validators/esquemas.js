@@ -167,6 +167,15 @@ const conversacionCrear = z.object({
     id_mascota: idPositivo.nullish(),   // opcional: la conversación puede no tratar de una mascota
 });
 
+// Ep8-Hu3: paginación del historial de mensajes. `antes` es el id del mensaje más antiguo
+// que ya se tiene; se devuelven los que van antes que él.
+const mensajesListar = z.object({
+    antes: z.coerce.number({ message: 'antes debe ser un número' }).int('antes debe ser un entero')
+        .positive('antes debe ser mayor a 0').optional(),
+    limite: z.coerce.number({ message: 'limite debe ser un número' }).int('limite debe ser un entero')
+        .min(1, 'limite debe estar entre 1 y 100').max(100, 'limite debe estar entre 1 y 100').default(30),
+});
+
 const mensajeEnviar = z.object({
     id_conversacion: idPositivo,
     contenido: z.string().trim()
@@ -262,7 +271,7 @@ module.exports = {
     mascotaCrear, mascotaActualizar,
     historiaActualizar, consultaCrear, consultaActualizar,
     tratamientoCrear, tratamientoActualizar, vacunaCrear, vacunaActualizar, evolucionCrear, seguimientoCrear,
-    conversacionCrear, mensajeEnviar,
+    conversacionCrear, mensajesListar, mensajeEnviar,
     veterinarioCrear, veterinarioActualizar, horarioCrear, horarioActualizar,
     perfilActualizar, perfilContrasena,
     olvideContrasena, verificarTokenRecuperacion, restablecerContrasena,
