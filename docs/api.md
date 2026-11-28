@@ -346,7 +346,7 @@ Todas las respuestas de error usan `{"mensaje": "..."}`, igual que el login exis
 | 404 | No existe |
 | 409 | Dato único repetido (correo, documento, microchip) o conflicto de estado |
 
-## Chat (Ep8-Hu1, Ep8-Hu3, Ep8-Hu4 y Ep8-Hu5)
+## Chat (Ep8-Hu1, Ep8-Hu2, Ep8-Hu3, Ep8-Hu4 y Ep8-Hu5)
 
 | Método | Ruta | Quién |
 |---|---|---|
@@ -354,8 +354,18 @@ Todas las respuestas de error usan `{"mensaje": "..."}`, igual que el login exis
 | GET | `/conversaciones` | propietario o veterinario — sus conversaciones, de la más reciente a la más antigua (ver Ep8-Hu3) |
 | POST | `/conversaciones` | propietario — `{ "id_veterinario": 1, "id_mascota": 1 }` (mascota opcional) |
 | GET | `/conversaciones/:id/mensajes?antes=&limite=` | solo los dos participantes — historial por páginas (ver Ep8-Hu3) |
+| PUT | `/conversaciones/:id/leidos` | solo los dos participantes — marca como leídos los mensajes recibidos (ver Ep8-Hu2) |
 
-Los mensajes se envían por Socket.IO: `io({ auth: { token } })` y el evento `enviar_mensaje` `{ id_conversacion, contenido }`, que responde `{ mensaje }` o `{ error, estado }`.
+Los mensajes se envían por Socket.IO: `io({ auth: { token } })` y el evento `enviar_mensaje` `{ id_conversacion, contenido }`, que responde `{ mensaje }` o `{ error, estado }`. Los mensajes recibidos llegan por el evento `nuevo_mensaje` (ver Ep8-Hu2).
+
+Recepción en tiempo real (Ep8-Hu2):
+
+- Cada usuario que conecta el socket entra a su sala `usuario:<id>`. Al guardar un mensaje, el servidor emite el evento **`nuevo_mensaje`** (con el mensaje completo, igual al de `ack.mensaje`) al propietario y al veterinario de la conversación, en todas sus pestañas abiertas; nadie más lo recibe y un mensaje rechazado no se entrega. El remitente también lo recibe (en sus otras pestañas), así que el cliente debe ignorar los repetidos por `id_mensaje`.
+- Si el destinatario no está conectado, el mensaje queda guardado y lo ve al volver: aparece en `ultimo_mensaje` y en el historial.
+- `GET /conversaciones` agrega `no_leidos` a cada conversación: cuántos mensajes recibidos (los que envió la otra persona) todavía no se han marcado como leídos.
+- `PUT /conversaciones/:id/leidos` marca como leídos los mensajes que recibió quien llama (no toca los suyos) y responde `{ "actualizados": N }`. Repetirlo responde `{ "actualizados": 0 }`. Otro usuario recibe `403` y una conversación inexistente, `404`.
+- En el frontend, al abrir la conversación se marcan como leídos; si llega un mensaje con la conversación abierta se muestra al instante (sin mover la pantalla a quien está leyendo mensajes antiguos) y si está cerrada suma al contador. Al reconectarse el socket se recupera lo que llegó mientras no había conexión.
+- No necesita migración: usa la columna `leido` de `mensajes`, que ya existe.
 
 Historial de conversaciones (Ep8-Hu3):
 

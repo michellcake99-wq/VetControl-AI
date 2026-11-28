@@ -375,3 +375,17 @@
   font-weight: 600;
   color: var(--c-texto-sec);
 }
+
+/* Ep8-Hu2: mensajes recibidos sin leer */
+.chat__no-leidos {
+  min-width: 22px;
+  height: 22px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: var(--c-acento);
+  color: var(--c-blanco);
+  font-size: 12px;
+  font-weight: 700;
+  display: grid;
+  place-items: center;
+}
