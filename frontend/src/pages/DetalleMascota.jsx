@@ -18,14 +18,14 @@ import Alerta from '../components/Alerta.jsx';
 import BotonVolver from '../components/BotonVolver.jsx';
 import CargandoInline from '../components/CargandoInline.jsx';
 import FotoMascota from '../components/FotoMascota.jsx';
-import PanelMascota from '../components/mascotas/PanelMascota.jsx';
 import PendientesMascota from '../components/mascotas/PendientesMascota.jsx';
 
 const mayuscula = (t) => (t ? t.charAt(0).toUpperCase() + t.slice(1) : t);
 
 /**
- * Ficha de una mascota: sus datos, sus pendientes (Ep5-Hu4) y, en pestañas, su historia clínica
- * (consultas), vacunas y tratamientos. Se abre al tocar una tarjeta en «Mis mascotas» / «Pacientes».
+ * Ficha de una mascota: sus datos, sus pendientes (Ep5-Hu4) y accesos a su historia clínica, carné de
+ * vacunación y seguimiento. No repite listados que ya tienen su propia pantalla (consultas, vacunas y
+ * tratamientos). Se abre al tocar una tarjeta en «Mis mascotas» / «Pacientes».
  */
 export default function DetalleMascota() {
   const { id } = useParams();
@@ -67,9 +67,8 @@ export default function DetalleMascota() {
     );
   }
 
+  // La especie, la raza y la edad ya salen arriba como etiquetas: aquí no se repiten
   const datos = [
-    ['Especie', mayuscula(mascota.especie)],
-    ['Raza', mascota.raza],
     [
       'Sexo',
       mascota.sexo === 'desconocido' ? null : ETIQUETA_SEXO[mascota.sexo],
@@ -175,10 +174,6 @@ export default function DetalleMascota() {
 
       <div className="detalle-mascota__pendientes">
         <PendientesMascota idMascota={mascota.id_mascota} />
-      </div>
-
-      <div className="detalle-mascota__panel">
-        <PanelMascota mascota={mascota} maximo={8} />
       </div>
     </section>
   );

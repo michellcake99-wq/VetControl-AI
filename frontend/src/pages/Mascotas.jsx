@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      import { useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import {
   Ban,
@@ -7,13 +7,13 @@ import {
   Pencil,
   Plus,
   Search,
-  User,
+  User,                                                                                       
   X,
 } from 'lucide-react';
 import { api } from '../services/api.js';
 import { rolActual } from '../utils/sesion.js';
 import { calcularEdad, ETIQUETA_SEXO } from '../utils/mascotas.js';
-import Alerta from '../components/Alerta.jsx';
+import Alerta from '../components/Alerta.jsx';                                                                                                                  
 import CargandoInline from '../components/CargandoInline.jsx';
 import ModalConfirmar from '../components/ModalConfirmar.jsx';
 import FotoMascota from '../components/FotoMascota.jsx';
@@ -199,9 +199,15 @@ export default function Mascotas() {
                   </button>
                 )}
               </div>
-              <span className="tarjeta-paciente__ver" aria-hidden="true">
+              {/* Enlace propio: «Ver ficha» también se puede tocar directamente */}
+              <Link
+                to={`/mascotas/${mascota.id_mascota}`}
+                className="tarjeta-paciente__ver"
+                tabIndex={-1}
+                aria-hidden="true"
+              >
                 Ver ficha <ChevronRight size={14} />
-              </span>
+              </Link>
             </article>
           ))}
         </div>

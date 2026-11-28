@@ -63,7 +63,8 @@
   gap: clamp(10px, 2vh, 22px);
   min-width: 0;
   min-height: 0;
-  padding: clamp(18px, 3.4vh, 34px) clamp(32px, 4.2vw, 64px) clamp(14px, 2.4vh, 26px);
+  padding: clamp(18px, 3.4vh, 34px) clamp(32px, 4.2vw, 64px)
+    clamp(14px, 2.4vh, 26px);
   color: var(--c-blanco);
 }
 /* Logo sin óvalo: el borde blanco lo da el propio filtro del emblema */
@@ -254,8 +255,7 @@
   font-weight: 600;
   color: var(--c-primario-activo);
 }
-.auth__olvido:hover,
-.auth__pie a:hover {
+.auth__olvido:hover {
   text-decoration: underline;
 }
 .auth .auth__enviar {
@@ -299,10 +299,42 @@
   height: 1px;
   background: var(--a-borde);
 }
+/* «Inicia sesión» / «Regístrate»: botón con relleno y elevación al pasar el mouse */
 .auth__pie a {
+  flex-shrink: 0;
+  padding: 8px 18px;
+  border: 2px solid #0b8aa0;
+  border-radius: 999px;
   font-weight: 700;
   color: #0b8aa0;
-  text-decoration: underline;
+  text-decoration: none;
+  transition:
+    background 0.2s ease,
+    color 0.2s ease,
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
+}
+.auth__pie a:hover {
+  border-color: transparent;
+  background: linear-gradient(135deg, #0b8aa0, #41b3a3);
+  color: var(--c-blanco);
+  transform: translateY(-3px) scale(1.04);
+  box-shadow: 0 10px 20px rgba(11, 138, 160, 0.35);
+}
+.auth__pie a:active {
+  transform: translateY(0) scale(0.98);
+  box-shadow: none;
+}
+.auth__pie a:focus-visible {
+  outline: 3px solid var(--c-acento);
+  outline-offset: 3px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .auth__pie a,
+  .auth__pie a:hover {
+    transition: none;
+    transform: none;
+  }
 }
 
 /* ---------- Campos ---------- */
