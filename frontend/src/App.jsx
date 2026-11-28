@@ -3,7 +3,7 @@ import Layout from './components/Layout.jsx';
 import PaginaPublica from './pages/PaginaPublica.jsx';
 import Inicio from './pages/Inicio.jsx';
 import PendientesClinicos from './pages/PendientesClinicos.jsx';
-import EnConstruccion from './pages/EnConstruccion.jsx';
+import Ayuda from './pages/Ayuda.jsx';
 import MiPerfil from './pages/MiPerfil.jsx';
 import Notificaciones from './pages/Notificaciones.jsx';
 import IniciarSesion from './pages/IniciarSesion.jsx';
@@ -132,7 +132,7 @@ export default function App() {
         {/* Ep6-Hu5: interfaz del asistente de inteligencia artificial */}
         <Route path="/asistente" element={<Asistente />} />
         <Route path="/perfil" element={<MiPerfil />} />
-        <Route path="/ayuda" element={<EnConstruccion titulo="Ayuda" />} />
+        <Route path="/ayuda" element={<Ayuda />} />
         {/* Ep5-Hu1: notificaciones y recordatorios */}
         <Route path="/notificaciones" element={<Notificaciones />} />
         <Route path="*" element={<Navigate to="/inicio" replace />} />

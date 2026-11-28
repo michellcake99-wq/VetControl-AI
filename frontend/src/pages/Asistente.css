@@ -58,7 +58,7 @@
   display: flex;
   flex-direction: column;
   margin-top: 14px;
-  height: calc(100vh - 360px);
+  height: calc(100vh - 310px);
   min-height: 440px;
   overflow: hidden;
 }
@@ -77,7 +77,7 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
   text-align: center;
   margin: auto 0;
   padding: 10px;
@@ -289,4 +289,91 @@
   .asistente__form {
     padding: 10px 12px 8px;
   }
+}
+
+
+/* Identidad visual de NubiVet: mascota virtual del asistente */
+.asistente__presentacion-nubivet {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  width: min(100%, 390px);
+  margin: 0 auto;
+}
+.asistente__nubivet-imagen {
+  display: block;
+  width: auto;
+  height: clamp(120px, 22vh, 190px);
+  max-width: 100%;
+  object-fit: contain;
+  filter: drop-shadow(0 6px 10px rgb(12 74 98 / 14%));
+}
+.asistente__nubivet-globo {
+  position: relative;
+  width: min(330px, 100%);
+  padding: 12px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  color: var(--c-primario);
+  text-align: left;
+  background: var(--c-blanco);
+  border: 1px solid var(--c-borde);
+  border-radius: 16px;
+  box-shadow: 0 8px 22px rgb(12 74 98 / 10%);
+  animation: nubivet-aparecer 450ms ease-out both;
+}
+.asistente__nubivet-globo::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  bottom: -9px;
+  width: 16px;
+  height: 16px;
+  transform: translateX(-50%) rotate(45deg);
+  background: var(--c-blanco);
+  border-right: 1px solid var(--c-borde);
+  border-bottom: 1px solid var(--c-borde);
+}
+.asistente__nubivet-globo strong {
+  font-size: 15px;
+}
+.asistente__nubivet-globo span {
+  color: var(--c-texto-sec);
+  font-size: 12px;
+  line-height: 1.45;
+}
+.asistente__bienvenida-texto {
+  max-width: 620px;
+  margin: 0;
+}
+.asistente__avatar-respuesta {
+  width: 38px;
+  height: 38px;
+  flex: 0 0 38px;
+  margin-bottom: 3px;
+  object-fit: contain;
+  align-self: flex-start;
+}
+.asistente__fila--asistente {
+  flex-direction: row;
+  align-items: flex-end;
+  gap: 7px;
+}
+.asistente__fila--asistente .asistente__aviso {
+  margin-left: 45px;
+}
+@keyframes nubivet-aparecer {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .asistente__nubivet-globo { animation: none; }
+}
+@media (max-width: 640px) {
+  .asistente__nubivet-imagen { height: clamp(110px, 18vh, 150px); }
+  .asistente__nubivet-globo { padding: 10px 12px; }
+  .asistente__avatar-respuesta { width: 30px; height: 30px; flex-basis: 30px; }
+  .asistente__fila--asistente .asistente__aviso { margin-left: 37px; }
 }
