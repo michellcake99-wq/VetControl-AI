@@ -44,7 +44,7 @@ beforeAll(async () => {
   idConsulta = (await pool.query('SELECT id_consulta FROM consultas c JOIN historias_clinicas h USING (id_historia) JOIN mascotas m USING (id_mascota) WHERE m.id_propietario = 1 LIMIT 1')).rows[0].id_consulta;
 });
 afterAll(() => pool.end());
-beforeEach(() => pool.query('TRUNCATE recordatorios; DELETE FROM tratamientos'));
+beforeEach(() => pool.query('TRUNCATE recordatorios, evoluciones_tratamiento; DELETE FROM tratamientos'));
 
 test('un tratamiento activo genera el recordatorio de la dosis que toca, con mascota, medicamento y dosis', async () => {
   const t = await crear({ fecha_inicio: diaMas(-1) });
