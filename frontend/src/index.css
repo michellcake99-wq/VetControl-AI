@@ -3100,23 +3100,28 @@ a.registro:hover {
 }
 .tarjeta-paciente__ver {
   position: absolute;
-  right: 16px;
-  bottom: 18px;
+  z-index: 1; /* por encima del enlace que cubre la tarjeta, para que reciba el clic */
+  right: 12px;
+  bottom: 14px;
   display: inline-flex;
   align-items: center;
   gap: 2px;
+  padding: 5px 8px 5px 12px;
+  border-radius: 999px;
   font-size: 12px;
   font-weight: 700;
   color: var(--c-acento);
-  opacity: 0;
-  transform: translateX(-4px);
+  text-decoration: none;
+  /* Siempre visible (en el celular no existe el hover) y más marcado al pasar el mouse */
   transition:
-    opacity 0.2s ease,
+    background 0.2s ease,
+    color 0.2s ease,
     transform 0.2s ease;
 }
-.tarjeta-paciente:hover .tarjeta-paciente__ver {
-  opacity: 1;
-  transform: none;
+.tarjeta-paciente__ver:hover {
+  background: var(--c-acento);
+  color: var(--c-blanco);
+  transform: translateX(2px);
 }
 
 /* Ficha de la mascota */
